@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>サブレ・インベーダーズ：デラックス</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f5f2ed;
+            --text-color: #5D4037;
+            --accent-color: #8b7969;
+            --danger-color: #e74c3c;
+        }
+        body {
+            font-family: 'Noto Serif JP', serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            -webkit-user-select: none; user-select: none;
+            overflow: hidden;
+        }
+        .game-container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8em;
+            margin: 0 0 15px 0;
+            color: #4e342e;
+        }
+        canvas {
+            background: #d3c6b6;
+            border-radius: 5px;
+            width: 100%;
+            height: auto;
+            cursor: none;
+        }
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1em;
+            margin: 10px 0;
+            padding: 0 5px;
+        }
+        #lives { color: var(--danger-color); font-size: 1.5em; }
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: var(--text-color);
+            font-size: 2em;
+            text-align: center;
+            background: rgba(245, 242, 237, 0.7);
+            pointer-events: none;
+        }
+        #ui-layer.hidden { display: none; }
+        #ui-layer button {
+            font-family: 'Noto Serif JP', serif;
+            font-size: 0.8em;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent-color);
+            color: white;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        #combo-display {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5em;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        #combo-display.active { opacity: 1; transform: translateX(-50%) scale(1.2); }
+        #mobile-controls {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .move-btn { background-color: var(--accent-color); color: white; border: none; border-radius: 8px; width: 80px; height: 60px; font-size: 2em; }
+        #shootBtn { background-color: #c0392b; border-radius: 50%; width: 80px; height: 80px; font-size: 1.2em; font-weight: bold; }
+        @media (max-width: 767px) { #mobile-controls { display: flex; } }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>Sablé Invaders DX</h1>
+        <div class="info-panel">
+            <div>❤️<span id="lives">3</span></div>
+            <div>SCORE: <span id="score">0</span></div>
+            <div>WAVE: <span id="wave">1</span></div>
+        </div>
+        
+        <div style="position: relative;">
+            <canvas id="gameCanvas"></canvas>
+            <div id="ui-layer">
+                <div>
+                    <p>サブレ軍団からお店を守れ！</p>
+                    <button id="startButton">ゲームスタート</button>
+                </div>
+            </div>
+            <div id="combo-display"></div>
+        </div>
+    </div>
+    
+    <div id="mobile-controls">
+        <button class="move-btn" id="leftBtn">◀</button>
+        <button class="move-btn" id="shootBtn">SHOOT</button>
+        <button class="move-btn" id="rightBtn">▶</button>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const waveEl = document.getElementById('wave');
+        const livesEl = document.getElementById('lives');
+        const uiLayer = document.getElementById('ui-layer');
+        const startButton = document.getElementById('startButton');
+        const comboDisplay = document.getElementById('combo-display');
+
+        canvas.width = 400;
+        canvas.height = 500;
+
+        // --- Game Objects ---
+        let player, projectiles, invaders, particles, powerUps, bombs, boss;
+        let score, wave, lives, isGameOver, combo, comboTimer, rapidFireActive;
+
+        const POWERUP_TYPES = {
+            SHIELD: { color: '#3498db', symbol: 'S' },
+            RAPID_FIRE: { color: '#f1c40f', symbol: 'R' }
+        };
+
+        function init() {
+            player = { x: canvas.width / 2 - 20, y: canvas.height - 60, width: 40, height: 20, speed: 5, dx: 0, shield: false };
+            projectiles = [];
+            invaders = [];
+            particles = [];
+            powerUps = [];
+            bombs = [];
+            boss = null;
+            score = 0;
+            wave = 1;
+            lives = 3;
+            isGameOver = true;
+            combo = 0;
+            comboTimer = 0;
+            rapidFireActive = false;
+            updateUI();
+        }
+
+        // --- Game Flow ---
+        function startGame() {
+            init();
+            isGameOver = false;
+            uiLayer.classList.add('hidden');
+            createInvaders();
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if (isGameOver) return;
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            uiLayer.innerHTML = `<div><p>GAME OVER</p><p>SCORE: ${score}</p><button id="restartButton">もう一度プレイ</button></div>`;
+            uiLayer.classList.remove('hidden');
+            document.getElementById('restartButton').addEventListener('click', startGame);
+        }
+
+        function nextWave() {
+            wave++;
+            if (wave % 4 === 0) { // 4ウェーブごとにボス戦
+                createBoss();
+            } else {
+                createInvaders();
+            }
+            updateUI();
+        }
+
+        // --- Object Creation ---
+        function createInvaders() {
+            invaders = [];
+            const invaderRows = 4;
+            const invaderCols = 6;
+            const colors = ['#607C5D', '#5D4037', '#F3E5AB'];
+            const invaderSpeed = 0.5 + wave * 0.1;
+
+            for (let r = 0; r < invaderRows; r++) {
+                for (let c = 0; c < invaderCols; c++) {
+                    let type = 'normal';
+                    let health = 1;
+                    if (r === 1) type = 'tough'; // 2列目は硬い
+                    if (r === 0) type = 'dropper'; // 1列目は弾を落とす
+                    if (type === 'tough') health = 2;
+
+                    invaders.push({
+                        x: c * 50 + 50, y: r * 40 + 50,
+                        width: 35, height: 25,
+                        alive: true, color: colors[r % colors.length],
+                        dx: invaderSpeed, type, health
+                    });
+                }
+            }
+        }
+        
+        function createBoss() {
+            boss = {
+                x: canvas.width / 2 - 50, y: 50,
+                width: 100, height: 60,
+                health: 10 + wave * 2, maxHealth: 10 + wave * 2,
+                dx: 2, dy: 0,
+                alive: true,
+                shootTimer: 0
+            };
+        }
+
+        // --- Update & Draw ---
+        function update() {
+            // Player
+            player.x += player.dx;
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+            // Projectiles
+            projectiles.forEach((p, i) => {
+                p.y -= p.speed;
+                if (p.y < 0) projectiles.splice(i, 1);
+            });
+            
+            // Bombs
+            bombs.forEach((b, i) => {
+                b.y += b.speed;
+                if (b.y > canvas.height) bombs.splice(i, 1);
+            });
+
+            // Invaders & Boss
+            if (boss) updateBoss(); else updateInvaders();
+            
+            // PowerUps
+            powerUps.forEach((p, i) => {
+                p.y += p.speed;
+                if (p.y > canvas.height) powerUps.splice(i, 1);
+            });
+            
+            // Particles & Combo
+            particles.forEach((p, i) => { p.update(); if(p.alpha <= 0) particles.splice(i, 1); });
+            if (comboTimer > 0) comboTimer--; else hideCombo();
+            
+            handleCollisions();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+            projectiles.forEach(p => drawProjectile(p));
+            bombs.forEach(b => drawBomb(b));
+            if (boss) drawBoss(); else invaders.forEach(i => drawInvader(i));
+            powerUps.forEach(p => drawPowerUp(p));
+            particles.forEach(p => p.draw());
+        }
+        
+        // --- Specific Updates ---
+        function updateInvaders() {
+            let edgeReached = false;
+            invaders.forEach(invader => {
+                if (!invader.alive) return;
+                invader.x += invader.dx;
+                if (invader.x < 0 || invader.x + invader.width > canvas.width) edgeReached = true;
+                if (invader.type === 'dropper' && Math.random() < 0.001 * (wave * 0.5)) {
+                    bombs.push({ x: invader.x + invader.width / 2, y: invader.y, speed: 3 });
+                }
+            });
+            if (edgeReached) {
+                invaders.forEach(invader => { invader.dx *= -1; invader.y += 20; });
+            }
+        }
+        
+        function updateBoss() {
+            boss.x += boss.dx;
+            if (boss.x < 0 || boss.x + boss.width > canvas.width) boss.dx *= -1;
+            boss.shootTimer++;
+            if (boss.shootTimer > 60 - wave) {
+                bombs.push({ x: boss.x + Math.random() * boss.width, y: boss.y + boss.height, speed: 4});
+                boss.shootTimer = 0;
+            }
+        }
+
+        // --- Specific Draws ---
+        function drawPlayer() {
+            ctx.fillStyle = '#8b7969';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            if (player.shield) {
+                ctx.strokeStyle = POWERUP_TYPES.SHIELD.color;
+                ctx.lineWidth = 3;
+                ctx.strokeRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
+            }
+        }
+        function drawProjectile(p) { ctx.fillStyle = rapidFireActive ? '#f1c40f' : '#fff'; ctx.fillRect(p.x, p.y, 5, 10); }
+        function drawBomb(b) { ctx.fillStyle = '#e74c3c'; ctx.fillRect(b.x, b.y, 4, 8); }
+        function drawInvader(i) {
+            if (!i.alive) return;
+            ctx.fillStyle = i.health === 1 ? i.color : '#34495e';
+            ctx.fillRect(i.x, i.y, i.width, i.height);
+        }
+        function drawBoss() {
+            ctx.fillStyle = '#c0392b';
+            ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(boss.x + 10, boss.y + 10, boss.width - 20, boss.height - 20);
+            // Health bar
+            ctx.fillStyle = 'grey';
+            ctx.fillRect(boss.x, boss.y - 15, boss.width, 10);
+            ctx.fillStyle = 'green';
+            ctx.fillRect(boss.x, boss.y - 15, boss.width * (boss.health / boss.maxHealth), 10);
+        }
+        function drawPowerUp(p) {
+            ctx.fillStyle = p.type.color;
+            ctx.fillRect(p.x, p.y, 20, 20);
+            ctx.fillStyle = '#fff';
+            ctx.font = '16px Orbitron';
+            ctx.fillText(p.type.symbol, p.x + 4, p.y + 16);
+        }
+
+        // --- Collisions & Logic ---
+        function handleCollisions() {
+            // Projectile vs Invader/Boss
+            projectiles.forEach((p, pi) => {
+                if (boss && boss.alive) {
+                    if (isColliding(p, boss)) {
+                        projectiles.splice(pi, 1);
+                        boss.health--;
+                        score += 50;
+                        createParticles(boss.x + boss.width / 2, boss.y + boss.height / 2);
+                        if (boss.health <= 0) {
+                            score += 1000;
+                            boss.alive = false;
+                            boss = null;
+                            nextWave();
+                        }
+                    }
+                } else {
+                    invaders.forEach((invader) => {
+                        if (invader.alive && isColliding(p, invader)) {
+                            projectiles.splice(pi, 1);
+                            invader.health--;
+                            if (invader.health <= 0) {
+                                invader.alive = false;
+                                score += (invader.type === 'tough' ? 20 : 10) + combo * 5;
+                                createParticles(invader.x, invader.y);
+                                updateCombo();
+                                if (Math.random() < 0.1) spawnPowerUp(invader.x, invader.y);
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Player vs Bomb/Invader
+            const allEnemies = [...bombs, ...invaders.filter(i => i.alive)];
+            if(boss) allEnemies.push(boss);
+            allEnemies.forEach(enemy => {
+                if (isColliding(player, enemy)) {
+                    if (player.shield) {
+                        player.shield = false;
+                        if(enemy.speed) bombs = bombs.filter(b => b !== enemy); // Remove bomb
+                        else enemy.alive = false; // Remove invader
+                    } else {
+                        lives--;
+                        updateUI();
+                        createParticles(player.x, player.y, '#e74c3c');
+                        if (lives <= 0) gameOver();
+                        else {
+                            player.x = canvas.width / 2 - 20;
+                            bombs = [];
+                        }
+                    }
+                }
+            });
+
+            // Player vs PowerUp
+            powerUps.forEach((p, i) => {
+                if (isColliding(player, p)) {
+                    activatePowerUp(p.type);
+                    powerUps.splice(i, 1);
+                }
+            });
+            
+            // Wave clear check
+            if (!boss && invaders.every(i => !i.alive)) nextWave();
+        }
+        
+        function isColliding(a, b) {
+            return a.x < b.x + (b.width || 0) && a.x + a.width > b.x &&
+                   a.y < b.y + (b.height || 0) && a.y + a.height > b.y;
+        }
+
+        function createParticles(x, y, color = '#fff') {
+            for (let i = 0; i < 20; i++) {
+                particles.push({
+                    x, y, color,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    alpha: 1,
+                    update() { this.x += this.vx; this.y += this.vy; this.alpha -= 0.05; },
+                    draw() {
+                        ctx.globalAlpha = this.alpha;
+                        ctx.fillStyle = this.color;
+                        ctx.fillRect(this.x, this.y, 3, 3);
+                        ctx.globalAlpha = 1;
+                    }
+                });
+            }
+        }
+        
+        function spawnPowerUp(x, y) {
+            const type = Math.random() < 0.5 ? POWERUP_TYPES.SHIELD : POWERUP_TYPES.RAPID_FIRE;
+            powerUps.push({ x, y, type, speed: 2, width: 20, height: 20 });
+        }
+
+        function activatePowerUp(type) {
+            if (type === POWERUP_TYPES.SHIELD) {
+                player.shield = true;
+            } else if (type === POWERUP_TYPES.RAPID_FIRE) {
+                rapidFireActive = true;
+                setTimeout(() => { rapidFireActive = false; }, 5000); // 5秒間
+            }
+        }
+        
+        function updateCombo() {
+            combo++;
+            comboTimer = 120; // 2秒
+            comboDisplay.textContent = `${combo} COMBO!`;
+            comboDisplay.classList.add('active');
+        }
+        function hideCombo() {
+            combo = 0;
+            comboDisplay.classList.remove('active');
+        }
+        
+        function updateUI() {
+            scoreEl.textContent = score;
+            waveEl.textContent = wave;
+            livesEl.textContent = lives;
+        }
+
+        // --- Input Handling ---
+        function shoot() {
+            if (rapidFireActive) {
+                 projectiles.push({ x: player.x + player.width / 2 - 2.5, y: player.y, speed: 7, width: 5, height: 10 });
+            } else if (projectiles.length < 3) { // 通常弾は3発まで
+                 projectiles.push({ x: player.x + player.width / 2 - 2.5, y: player.y, speed: 7, width: 5, height: 10 });
+            }
+        }
+        
+        let shootInterval;
+        function handleShootStart() {
+            if (isGameOver) return;
+            shoot();
+            if (rapidFireActive) {
+                clearInterval(shootInterval);
+                shootInterval = setInterval(shoot, 100);
+            }
+        }
+        function handleShootEnd() {
+            clearInterval(shootInterval);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') player.dx = -player.speed;
+            if (e.key === 'ArrowRight') player.dx = player.speed;
+            if (e.key === ' ' || e.key === 'Spacebar') handleShootStart();
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.dx = 0;
+            if (e.key === ' ' || e.key === 'Spacebar') handleShootEnd();
+        });
+
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const shootBtn = document.getElementById('shootBtn');
+        leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); player.dx = -player.speed; });
+        leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); player.dx = 0; });
+        rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); player.dx = player.speed; });
+        rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); player.dx = 0; });
+        shootBtn.addEventListener('touchstart', (e) => { e.preventDefault(); handleShootStart(); });
+        shootBtn.addEventListener('touchend', (e) => { e.preventDefault(); handleShootEnd(); });
+        
+        startButton.addEventListener('click', startGame);
+        
+        init();
+    });
+    </script>
+</body>
+</html>
