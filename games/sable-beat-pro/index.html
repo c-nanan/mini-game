@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>サブレ・ビート・プロ (片手モード対応)</title>
+    <title>サブレ・ビート</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     
     <style>
@@ -50,10 +50,8 @@
             margin: 15px auto; width: 80%;
             transition: all 0.3s ease;
         }
-        .ui-button:hover {
-            background: var(--accent-color);
-            transform: scale(1.05);
-        }
+        .ui-button:hover { background: var(--accent-color); transform: scale(1.05); }
+        .ui-button:disabled { background: #555; border-color: #555; color: #888; cursor: not-allowed; }
         #feedback-text {
             position: absolute; top: 60%; left: 50%;
             transform: translate(-50%, -50%);
@@ -61,12 +59,12 @@
             color: #fff; text-shadow: 0 0 15px var(--particle-color);
             opacity: 0; transition: all 0.3s;
         }
-        #feedback-text.show { opacity: 1; transform: translateX(-50%) scale(1.2); }
+        #feedback-text.show { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <h1>サブレ・ビート・プロ</h1>
+        <h1>サブレ・ビート</h1>
         <div class="info-panel">
             <div>SCORE: <span id="score">0</span></div>
             <div>COMBO: <span id="combo">0</span></div>
@@ -75,20 +73,7 @@
         <div id="canvas-wrapper">
             <canvas id="gameCanvas"></canvas>
             <div id="ui-layer">
-                <div id="song-select-view">
-                    <p>プレイする曲を選んでください</p>
-                    <button class="ui-button" data-song="sakusaku">サクサク冒険</button>
-                    <button class="ui-button" data-song="mochimochi">もちもちリラックス</button>
-                </div>
-                <div id="style-select-view" style="display: none;">
-                     <p>プレイスタイルを選んでください</p>
-                    <button class="ui-button" data-style="left">左手でプレイ</button>
-                    <button class="ui-button" data-style="right">右手でプレイ</button>
-                    <button class="ui-button" data-style="tap">タップでプレイ</button>
-                </div>
-                <!-- ★★★ 修正点: UI表示用のコンテナを追加 ★★★ -->
-                <div id="message-view" style="display: none;"></div>
-                <div id="game-over-view" style="display: none;"></div>
+                <div id="main-view"></div>
             </div>
             <div id="feedback-text"></div>
         </div>
@@ -101,10 +86,7 @@
         const scoreEl = document.getElementById('score');
         const comboEl = document.getElementById('combo');
         const uiLayer = document.getElementById('ui-layer');
-        const songSelectView = document.getElementById('song-select-view');
-        const styleSelectView = document.getElementById('style-select-view');
-        const messageView = document.getElementById('message-view');
-        const gameOverView = document.getElementById('game-over-view');
+        const mainView = document.getElementById('main-view');
         const feedbackText = document.getElementById('feedback-text');
         
         canvas.width = 400;
@@ -112,12 +94,16 @@
 
         const LANES = 5;
         const LANE_WIDTH = canvas.width / LANES;
-        const NOTE_HEIGHT = 20;
-        const JUDGEMENT_LINE_Y = canvas.height - 80;
+        const NOTE_HEIGHT = 25;
+        // ★★★ 変更点: 判定ラインを上に移動 ★★★
+        const JUDGEMENT_LINE_Y = canvas.height - 150;
 
-        const beatmaps = {
-            sakusaku: [
-    { time: 2.764, lane: 0, type: 0 },
+        // ==================================================================
+        // ★★★ ここに「譜面作成ツール」で作った一番難しい譜面を貼り付けます ★★★
+        // ==================================================================
+        const masterBeatmaps = {
+            sakusaku: [ // HARD
+               { time: 2.764, lane: 0, type: 0 },
     { time: 3.282, lane: 1, type: 1 },
     { time: 3.744, lane: 4, type: 1 },
     { time: 4.314, lane: 2, type: 2 },
@@ -178,9 +164,9 @@
     { time: 34.962, lane: 0, type: 2 },
     { time: 35.497, lane: 3, type: 2 },
     { time: 35.792, lane: 1, type: 0 },
-],
-            mochimochi: [
-    { time: 1.131, lane: 1, type: 1 },
+            ],
+            mochimochi: [ // HARD
+                 { time: 1.131, lane: 1, type: 1 },
     { time: 1.54, lane: 2, type: 2 },
     { time: 2.866, lane: 4, type: 0 },
     { time: 3.263, lane: 3, type: 2 },
@@ -272,7 +258,7 @@
     { time: 35.341, lane: 3, type: 0 },
     { time: 35.357, lane: 4, type: 0 },
     { time: 36.064, lane: 1, type: 2 },
-]
+            ]
         };
         
         const keyMaps = {
@@ -286,64 +272,93 @@
         let laneFlashes = [0, 0, 0, 0, 0];
         let isGameRunning = false, startTime = 0;
         const noteSpeed = 3;
+        let currentSong, currentStage = 0;
+        let clearedStages = { sakusaku: -1, mochimochi: -1 };
 
         const SABLE_COLORS = {
-            base: ['#607C5D', '#5D4037', '#F3E5AB'],
-            light: ['#83b97e', '#8d6e63', '#fff5d6']
+            base: ['#5a8a56', '#5D4037', '#e7c060'],
+            light: ['#83b97e', '#8d6e63', '#f8e5ab'],
+            shadow: ['#4a7047', '#4a332c', '#c7a340']
         };
         
-        // ★★★ 修正点: init関数を正しく定義 ★★★
-        function init() {
-            score = 0; combo = 0; notes = []; particles = [];
-            laneFlashes = [0, 0, 0, 0, 0];
-            isGameRunning = false; startTime = 0; currentKeyMap = null;
+        // ★★★ 新機能: 譜面を自動生成する関数 ★★★
+        function generateDifficulty(baseBeatmap, difficulty) {
+            if (difficulty === 'HARD') return baseBeatmap;
+            
+            const ratio = difficulty === 'NORMAL' ? 0.75 : 0.5;
+            // 意図的に同じ譜面になるように、ランダムではなく間引く方式を採用
+            return baseBeatmap.filter((_, index) => index % Math.round(1 / ratio) === 0);
+        }
 
-            if(audio) {
-                audio.pause();
-                audio = null;
-            }
-
-            // UIを初期状態に戻す
-            songSelectView.style.display = 'block';
-            styleSelectView.style.display = 'none';
-            messageView.style.display = 'none';
-            gameOverView.style.display = 'none';
+        function showView(view) {
+            mainView.innerHTML = view;
             uiLayer.classList.remove('hidden');
-
-            updateUI();
-            
-            // ゲーム画面をクリア
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawLanes();
-            drawJudgementLine();
+            attachButtonListeners();
         }
 
-        function selectSong(songName) {
-            audio = new Audio(`./${songName}.mp3`);
+        function showSongSelect() {
+            const view = `
+                <p>プレイする曲を選んでください</p>
+                <button class="ui-button" data-action="select-song" data-song="sakusaku">サクサク冒険</button>
+                <button class="ui-button" data-action="select-song" data-song="mochimochi">もちもちリラックス</button>
+            `;
+            showView(view);
+        }
+
+        function showStageSelect() {
+            const lastCleared = clearedStages[currentSong];
+            const view = `
+                <p>ステージを選んでください</p>
+                <button class="ui-button" data-action="select-stage" data-difficulty="EASY">EASY</button>
+                <button class="ui-button" data-action="select-stage" data-difficulty="NORMAL" ${lastCleared < 0 ? 'disabled' : ''}>NORMAL</button>
+                <button class="ui-button" data-action="select-stage" data-difficulty="HARD" ${lastCleared < 1 ? 'disabled' : ''}>HARD</button>
+                <button class="ui-button" data-action="back-to-song-select">曲選択に戻る</button>
+            `;
+            showView(view);
+        }
+        
+        function showStyleSelect() {
+            const view = `
+                <p>プレイスタイルを選んでください</p>
+                <button class="ui-button" data-action="select-style" data-style="left">左手でプレイ</button>
+                <button class="ui-button" data-action="select-style" data-style="right">右手でプレイ</button>
+                <button class="ui-button" data-action="select-style" data-style="tap">タップでプレイ</button>
+                <button class="ui-button" data-action="back-to-stage-select">ステージ選択に戻る</button>
+            `;
+            showView(view);
+        }
+
+        function attachButtonListeners() {
+            document.querySelectorAll('[data-action]').forEach(button => {
+                button.onclick = (e) => {
+                    const { action, song, difficulty, style } = e.target.dataset;
+                    switch (action) {
+                        case 'select-song':
+                            currentSong = song;
+                            showStageSelect();
+                            break;
+                        case 'select-stage':
+                            currentStage = ['EASY', 'NORMAL', 'HARD'].indexOf(difficulty);
+                            beatmap = generateDifficulty(masterBeatmaps[currentSong], difficulty);
+                            showStyleSelect();
+                            break;
+                        case 'select-style':
+                            currentKeyMap = (style === 'left' || style === 'right') ? keyMaps[style] : null;
+                            prepareGame();
+                            break;
+                        case 'back-to-song-select': showSongSelect(); break;
+                        case 'back-to-stage-select': showStageSelect(); break;
+                    }
+                };
+            });
+        }
+        
+        function prepareGame() {
+            audio = new Audio(`./${currentSong}.mp3`);
             audio.preload = "auto";
-            beatmap = beatmaps[songName];
-            if (!beatmap) return;
-            
-            // ★★★ 修正点: UI表示を安全な方法に変更 ★★★
-            songSelectView.style.display = 'none';
-            messageView.innerHTML = `<p>ロード中...</p>`;
-            messageView.style.display = 'block';
-
-            audio.addEventListener('canplaythrough', () => {
-                messageView.style.display = 'none';
-                styleSelectView.style.display = 'block';
-            }, { once: true });
-            
+            showView(`<p>ロード中...</p>`);
+            audio.addEventListener('canplaythrough', startGame, { once: true });
             audio.load();
-        }
-
-        function selectPlayStyle(style) {
-            if (style === 'left' || style === 'right') {
-                currentKeyMap = keyMaps[style];
-            } else {
-                currentKeyMap = null; // タップモード
-            }
-            startGame();
         }
 
         function startGame() {
@@ -377,24 +392,34 @@
             notes = notes.filter(note => !note.isHit || note.y <= canvas.height);
             particles.forEach((p, i) => { p.update(); p.draw(); if (p.alpha <= 0) particles.splice(i, 1); });
             if (audio.ended) {
-                gameOver();
+                finishStage();
             } else {
                 requestAnimationFrame(gameLoop);
             }
         }
         
-        // ★★★ 修正点: ゲームオーバー処理を安全な方法に変更 ★★★
-        function gameOver() {
+        function finishStage() {
             isGameRunning = false;
-            gameOverView.innerHTML = `<div><p>FINISH!</p><p>SCORE: ${score}</p><button class="ui-button" id="restartButton">曲選択に戻る</button></div>`;
-            
-            songSelectView.style.display = 'none';
-            styleSelectView.style.display = 'none';
-            messageView.style.display = 'none';
-            gameOverView.style.display = 'block';
-            uiLayer.classList.remove('hidden');
+            // 80%以上のスコアでクリア
+            const clearThreshold = beatmap.length * 300 * 0.8; 
+            const isClear = score >= clearThreshold;
 
-            document.getElementById('restartButton').addEventListener('click', init);
+            if (isClear && currentStage > clearedStages[currentSong]) {
+                clearedStages[currentSong] = currentStage;
+            }
+
+            const message = isClear ? "STAGE CLEAR!" : "STAGE FAILED...";
+            const nextButton = isClear && currentStage < 2 ? `<button class="ui-button" data-action="back-to-stage-select">次のステージへ</button>` : '';
+            
+            const view = `
+                <div>
+                    <p>${message}</p>
+                    <p>SCORE: ${score}</p>
+                    ${nextButton}
+                    <button class="ui-button" data-action="back-to-song-select">曲選択に戻る</button>
+                </div>
+            `;
+            showView(view);
         }
         
         function drawLanes() {
@@ -412,16 +437,32 @@
         function drawJudgementLine() {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.fillRect(0, JUDGEMENT_LINE_Y, canvas.width, 3);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.fillRect(0, JUDGEMENT_LINE_Y - 30, canvas.width, 60);
         }
 
+        // ★★★ 新機能: 美味しそうなサブレを描画 ★★★
         function drawNote(note) {
             const x = note.lane * LANE_WIDTH;
-            const colorBase = SABLE_COLORS.base[note.type];
-            const colorLight = SABLE_COLORS.light[note.type];
-            ctx.fillStyle = colorBase;
-            ctx.fillRect(x + 5, note.y, LANE_WIDTH - 10, NOTE_HEIGHT);
-            ctx.fillStyle = colorLight;
-            ctx.fillRect(x + 10, note.y + 5, LANE_WIDTH - 20, NOTE_HEIGHT - 10);
+            const w = LANE_WIDTH - 10;
+            const h = NOTE_HEIGHT;
+            const y = note.y;
+
+            // 影
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.fillRect(x + 8, y + 8, w, h);
+            
+            // 本体
+            ctx.fillStyle = SABLE_COLORS.base[note.type];
+            ctx.fillRect(x + 5, y, w, h);
+            
+            // 焼き色（上部）
+            ctx.fillStyle = SABLE_COLORS.light[note.type];
+            ctx.fillRect(x + 5, y, w, h/3);
+
+            // 立体感（下部の暗い線）
+            ctx.fillStyle = SABLE_COLORS.shadow[note.type];
+            ctx.fillRect(x + 5, y + h - 4, w, 4);
         }
 
         function handleInput(lane) {
@@ -436,11 +477,11 @@
                 }
             });
             laneFlashes[lane] = 0.5;
-            if (bestNoteIndex !== -1 && minDiff < 0.3) {
+            if (bestNoteIndex !== -1 && minDiff < 0.2) { // 判定を少し甘く
                 const note = notes[bestNoteIndex];
                 note.isHit = true;
-                if (minDiff < 0.1) { score += 300 + combo; combo++; showFeedback('PERFECT'); }
-                else if (minDiff < 0.2) { score += 100; combo++; showFeedback('GOOD'); }
+                if (minDiff < 0.08) { score += 300 + combo; combo++; showFeedback('PERFECT'); }
+                else if (minDiff < 0.15) { score += 100; combo++; showFeedback('GOOD'); }
                 else { resetCombo(); showFeedback('BAD'); }
                 createParticles(lane * LANE_WIDTH + LANE_WIDTH / 2, JUDGEMENT_LINE_Y);
             }
@@ -475,19 +516,16 @@
             }
         }
 
-        // --- Input Handling ---
         document.addEventListener('keydown', (e) => {
             if (currentKeyMap) {
                 const key = e.key === ' ' ? ' ' : e.key.toLowerCase();
-                if (currentKeyMap[key] !== undefined) {
-                    handleInput(currentKeyMap[key]);
-                }
+                if (currentKeyMap[key] !== undefined) handleInput(currentKeyMap[key]);
             }
         });
 
         function handlePointerInput(event) {
             event.preventDefault();
-            if (currentKeyMap) return; // キーボードモード中はタップ無効
+            if (currentKeyMap) return;
             const rect = canvas.getBoundingClientRect();
             const clientX = event.touches ? event.touches[0].clientX : event.clientX;
             const touchX = clientX - rect.left;
@@ -498,16 +536,7 @@
         canvas.addEventListener('touchstart', handlePointerInput, { passive: false });
         canvas.addEventListener('mousedown', handlePointerInput);
         
-        // --- UI Initialization ---
-        document.querySelectorAll('#song-select-view .ui-button').forEach(button => {
-            button.addEventListener('click', (e) => selectSong(e.target.dataset.song));
-        });
-        document.querySelectorAll('#style-select-view .ui-button').forEach(button => {
-            button.addEventListener('click', (e) => selectPlayStyle(e.target.dataset.style));
-        });
-        
-        // ★★★ 修正点: 最後にinit()を呼び出す ★★★
-        init();
+        showSongSelect();
     });
     </script>
 </body>
