@@ -100,6 +100,38 @@
             transition: opacity 0.5s, transform 0.5s;
         }
         #combo-display.active { opacity: 1; transform: translateX(-50%) scale(1.2); }
+        
+        .music-controls {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .music-button {
+            font-family: 'Noto Serif JP', serif;
+            font-size: 0.9em;
+            padding: 8px 15px;
+            border: 1px solid #d3c6b6;
+            background-color: #fff;
+            color: var(--text-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .music-button:hover {
+            background-color: var(--bg-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .music-button.playing {
+            background-color: var(--accent-color);
+            color: #fff;
+            border-color: var(--accent-color);
+            font-weight: bold;
+        }
+
         #mobile-controls {
             display: none;
             width: 100%;
@@ -115,9 +147,18 @@
     </style>
 </head>
 <body>
+    <audio id="bgm1" loop src="./sakusaku.mp3"></audio>
+    <audio id="bgm2" loop src="./mochimochi.mp3"></audio>
 
     <div class="game-container">
         <h1>Sablé Invaders DX</h1>
+
+        <div class="music-controls">
+            <button class="music-button" id="bgm1Btn">サクサク冒険</button>
+            <button class="music-button" id="bgm2Btn">もちもちリラックス</button>
+            <button class="music-button" id="bgmStopBtn">停止</button>
+        </div>
+
         <div class="info-panel">
             <div>❤️<span id="lives">3</span></div>
             <div>SCORE: <span id="score">0</span></div>
@@ -156,7 +197,6 @@
         canvas.width = 400;
         canvas.height = 500;
 
-        // --- Game Objects ---
         let player, projectiles, invaders, particles, powerUps, bombs, boss;
         let score, wave, lives, isGameOver, combo, comboTimer, rapidFireActive;
 
@@ -183,7 +223,6 @@
             updateUI();
         }
 
-        // --- Game Flow ---
         function startGame() {
             init();
             isGameOver = false;
@@ -208,7 +247,7 @@
 
         function nextWave() {
             wave++;
-            if (wave % 4 === 0) { // 4ウェーブごとにボス戦
+            if (wave % 4 === 0) {
                 createBoss();
             } else {
                 createInvaders();
@@ -216,7 +255,6 @@
             updateUI();
         }
 
-        // --- Object Creation ---
         function createInvaders() {
             invaders = [];
             const invaderRows = 4;
@@ -228,8 +266,8 @@
                 for (let c = 0; c < invaderCols; c++) {
                     let type = 'normal';
                     let health = 1;
-                    if (r === 1) type = 'tough'; // 2列目は硬い
-                    if (r === 0) type = 'dropper'; // 1列目は弾を落とす
+                    if (r === 1) type = 'tough';
+                    if (r === 0) type = 'dropper';
                     if (type === 'tough') health = 2;
 
                     invaders.push({
@@ -253,35 +291,28 @@
             };
         }
 
-        // --- Update & Draw ---
         function update() {
-            // Player
             player.x += player.dx;
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 
-            // Projectiles
             projectiles.forEach((p, i) => {
                 p.y -= p.speed;
                 if (p.y < 0) projectiles.splice(i, 1);
             });
             
-            // Bombs
             bombs.forEach((b, i) => {
                 b.y += b.speed;
                 if (b.y > canvas.height) bombs.splice(i, 1);
             });
 
-            // Invaders & Boss
             if (boss) updateBoss(); else updateInvaders();
             
-            // PowerUps
             powerUps.forEach((p, i) => {
                 p.y += p.speed;
                 if (p.y > canvas.height) powerUps.splice(i, 1);
             });
             
-            // Particles & Combo
             particles.forEach((p, i) => { p.update(); if(p.alpha <= 0) particles.splice(i, 1); });
             if (comboTimer > 0) comboTimer--; else hideCombo();
             
@@ -298,7 +329,6 @@
             particles.forEach(p => p.draw());
         }
         
-        // --- Specific Updates ---
         function updateInvaders() {
             let edgeReached = false;
             invaders.forEach(invader => {
@@ -324,7 +354,6 @@
             }
         }
 
-        // --- Specific Draws ---
         function drawPlayer() {
             ctx.fillStyle = '#8b7969';
             ctx.fillRect(player.x, player.y, player.width, player.height);
@@ -346,7 +375,6 @@
             ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
             ctx.fillStyle = '#e74c3c';
             ctx.fillRect(boss.x + 10, boss.y + 10, boss.width - 20, boss.height - 20);
-            // Health bar
             ctx.fillStyle = 'grey';
             ctx.fillRect(boss.x, boss.y - 15, boss.width, 10);
             ctx.fillStyle = 'green';
@@ -360,9 +388,7 @@
             ctx.fillText(p.type.symbol, p.x + 4, p.y + 16);
         }
 
-        // --- Collisions & Logic ---
         function handleCollisions() {
-            // Projectile vs Invader/Boss
             projectiles.forEach((p, pi) => {
                 if (boss && boss.alive) {
                     if (isColliding(p, boss)) {
@@ -394,15 +420,14 @@
                 }
             });
 
-            // Player vs Bomb/Invader
             const allEnemies = [...bombs, ...invaders.filter(i => i.alive)];
             if(boss) allEnemies.push(boss);
             allEnemies.forEach(enemy => {
                 if (isColliding(player, enemy)) {
                     if (player.shield) {
                         player.shield = false;
-                        if(enemy.speed) bombs = bombs.filter(b => b !== enemy); // Remove bomb
-                        else enemy.alive = false; // Remove invader
+                        if(enemy.speed) bombs = bombs.filter(b => b !== enemy);
+                        else enemy.alive = false;
                     } else {
                         lives--;
                         updateUI();
@@ -416,7 +441,6 @@
                 }
             });
 
-            // Player vs PowerUp
             powerUps.forEach((p, i) => {
                 if (isColliding(player, p)) {
                     activatePowerUp(p.type);
@@ -424,7 +448,6 @@
                 }
             });
             
-            // Wave clear check
             if (!boss && invaders.every(i => !i.alive)) nextWave();
         }
         
@@ -461,13 +484,13 @@
                 player.shield = true;
             } else if (type === POWERUP_TYPES.RAPID_FIRE) {
                 rapidFireActive = true;
-                setTimeout(() => { rapidFireActive = false; }, 5000); // 5秒間
+                setTimeout(() => { rapidFireActive = false; }, 5000);
             }
         }
         
         function updateCombo() {
             combo++;
-            comboTimer = 120; // 2秒
+            comboTimer = 120;
             comboDisplay.textContent = `${combo} COMBO!`;
             comboDisplay.classList.add('active');
         }
@@ -482,11 +505,10 @@
             livesEl.textContent = lives;
         }
 
-        // --- Input Handling ---
         function shoot() {
             if (rapidFireActive) {
                  projectiles.push({ x: player.x + player.width / 2 - 2.5, y: player.y, speed: 7, width: 5, height: 10 });
-            } else if (projectiles.length < 3) { // 通常弾は3発まで
+            } else if (projectiles.length < 3) {
                  projectiles.push({ x: player.x + player.width / 2 - 2.5, y: player.y, speed: 7, width: 5, height: 10 });
             }
         }
@@ -525,6 +547,44 @@
         shootBtn.addEventListener('touchend', (e) => { e.preventDefault(); handleShootEnd(); });
         
         startButton.addEventListener('click', startGame);
+        
+        const bgm1 = document.getElementById('bgm1');
+        const bgm2 = document.getElementById('bgm2');
+        const bgm1Btn = document.getElementById('bgm1Btn');
+        const bgm2Btn = document.getElementById('bgm2Btn');
+        const bgmStopBtn = document.getElementById('bgmStopBtn');
+        const allBgmBtns = [bgm1Btn, bgm2Btn, bgmStopBtn];
+
+        function stopAllMusic() {
+            bgm1.pause();
+            bgm1.currentTime = 0;
+            bgm2.pause();
+            bgm2.currentTime = 0;
+            allBgmBtns.forEach(btn => btn.classList.remove('playing'));
+        }
+
+        function playMusic(audioElement, buttonElement) {
+            if (audioElement.readyState > 0) {
+                stopAllMusic();
+                const playPromise = audioElement.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(_ => {
+                        buttonElement.classList.add('playing');
+                    }).catch(error => {
+                        console.error("BGMの再生に失敗しました:", error);
+                    });
+                }
+            } else {
+                audioElement.addEventListener('canplaythrough', () => {
+                   playMusic(audioElement, buttonElement);
+                }, { once: true });
+                audioElement.load();
+            }
+        }
+
+        bgm1Btn.addEventListener('click', () => { playMusic(bgm1, bgm1Btn); });
+        bgm2Btn.addEventListener('click', () => { playMusic(bgm2, bgm2Btn); });
+        bgmStopBtn.addEventListener('click', stopAllMusic);
         
         init();
     });
