@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>サブレ・ビート・プロ</title>
+    <title>サブレ・ビート・プロ (片手モード対応)</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     
     <style>
@@ -30,7 +30,7 @@
         .game-container { width: 100%; max-width: 400px; text-align: center; }
         h1 { font-family: 'Orbitron', sans-serif; font-size: 2em; margin: 0 0 15px 0; color: #fff; text-shadow: 0 0 10px #fff; }
         #canvas-wrapper { position: relative; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; }
-        canvas { display: block; width: 100%; height: auto; background: linear-gradient(to bottom, #34495e, #2c3e50); }
+        canvas { display: block; width: 100%; height: auto; background: linear-gradient(to bottom, #34495e, #2c3e50); cursor: pointer; }
         .info-panel { display: flex; justify-content: space-around; font-family: 'Orbitron', sans-serif; font-size: 1.2em; margin: 15px 0; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; }
         #ui-layer {
             position: absolute; top: 0; left: 0;
@@ -42,7 +42,7 @@
         }
         #ui-layer.hidden { display: none; }
         #ui-layer p { margin: 0 0 20px 0; }
-        .song-select-button {
+        .ui-button {
             font-family: 'Noto Serif JP', serif;
             font-size: 1em; padding: 15px 30px; border-radius: 8px;
             border: 2px solid var(--accent-color); background: transparent; color: #fff;
@@ -50,7 +50,7 @@
             margin: 15px auto; width: 80%;
             transition: all 0.3s ease;
         }
-        .song-select-button:hover {
+        .ui-button:hover {
             background: var(--accent-color);
             transform: scale(1.05);
         }
@@ -61,7 +61,7 @@
             color: #fff; text-shadow: 0 0 15px var(--particle-color);
             opacity: 0; transition: all 0.3s;
         }
-        #feedback-text.show { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+        #feedback-text.show { opacity: 1; transform: translateX(-50%) scale(1.2); }
     </style>
 </head>
 <body>
@@ -75,11 +75,20 @@
         <div id="canvas-wrapper">
             <canvas id="gameCanvas"></canvas>
             <div id="ui-layer">
-                <div>
+                <div id="song-select-view">
                     <p>プレイする曲を選んでください</p>
-                    <button class="song-select-button" data-song="sakusaku">サクサク冒険</button>
-                    <button class="song-select-button" data-song="mochimochi">もちもちリラックス</button>
+                    <button class="ui-button" data-song="sakusaku">サクサク冒険</button>
+                    <button class="ui-button" data-song="mochimochi">もちもちリラックス</button>
                 </div>
+                <div id="style-select-view" style="display: none;">
+                     <p>プレイスタイルを選んでください</p>
+                    <button class="ui-button" data-style="left">左手でプレイ</button>
+                    <button class="ui-button" data-style="right">右手でプレイ</button>
+                    <button class="ui-button" data-style="tap">タップでプレイ</button>
+                </div>
+                <!-- ★★★ 修正点: UI表示用のコンテナを追加 ★★★ -->
+                <div id="message-view" style="display: none;"></div>
+                <div id="game-over-view" style="display: none;"></div>
             </div>
             <div id="feedback-text"></div>
         </div>
@@ -92,210 +101,256 @@
         const scoreEl = document.getElementById('score');
         const comboEl = document.getElementById('combo');
         const uiLayer = document.getElementById('ui-layer');
+        const songSelectView = document.getElementById('song-select-view');
+        const styleSelectView = document.getElementById('style-select-view');
+        const messageView = document.getElementById('message-view');
+        const gameOverView = document.getElementById('game-over-view');
         const feedbackText = document.getElementById('feedback-text');
         
         canvas.width = 400;
         canvas.height = 600;
 
-        const LANES = 4;
+        const LANES = 5;
         const LANE_WIDTH = canvas.width / LANES;
         const NOTE_HEIGHT = 20;
         const JUDGEMENT_LINE_Y = canvas.height - 80;
 
-        // ==================================================================
-        // ★★★ ここに、事前に解析した譜面データを保存します ★★★
-        // ==================================================================
         const beatmaps = {
             sakusaku: [
-    { time: 3.119, lane: 3, type: 2 },
-    { time: 3.675, lane: 1, type: 1 },
-    { time: 4.296, lane: 2, type: 2 },
-    { time: 4.869, lane: 3, type: 2 },
-    { time: 5.158, lane: 0, type: 1 },
-    { time: 5.526, lane: 2, type: 2 },
-    { time: 5.642, lane: 1, type: 2 },
-    { time: 5.957, lane: 3, type: 0 },
-    { time: 6.424, lane: 2, type: 0 },
-    { time: 6.93, lane: 1, type: 0 },
-    { time: 7.309, lane: 2, type: 1 },
-    { time: 7.774, lane: 2, type: 0 },
-    { time: 8.139, lane: 3, type: 2 },
-    { time: 8.835, lane: 0, type: 2 },
-    { time: 9.166, lane: 2, type: 2 },
-    { time: 9.287, lane: 1, type: 0 },
+    { time: 2.764, lane: 0, type: 0 },
+    { time: 3.282, lane: 1, type: 1 },
+    { time: 3.744, lane: 4, type: 1 },
+    { time: 4.314, lane: 2, type: 2 },
+    { time: 4.858, lane: 3, type: 0 },
+    { time: 6.025, lane: 4, type: 0 },
+    { time: 6.719, lane: 3, type: 2 },
+    { time: 7.715, lane: 1, type: 0 },
+    { time: 8.189, lane: 3, type: 0 },
+    { time: 8.761, lane: 2, type: 1 },
+    { time: 9.091, lane: 4, type: 0 },
+    { time: 9.315, lane: 0, type: 0 },
     { time: 9.666, lane: 3, type: 2 },
-    { time: 10.122, lane: 2, type: 0 },
-    { time: 10.582, lane: 1, type: 0 },
-    { time: 11.185, lane: 0, type: 2 },
-    { time: 11.543, lane: 2, type: 2 },
-    { time: 11.727, lane: 3, type: 1 },
-    { time: 12.114, lane: 2, type: 1 },
-    { time: 13.03, lane: 0, type: 1 },
-    { time: 13.936, lane: 2, type: 2 },
-    { time: 14.463, lane: 3, type: 2 },
-    { time: 15.071, lane: 1, type: 2 },
-    { time: 15.661, lane: 0, type: 2 },
-    { time: 16.239, lane: 2, type: 2 },
-    { time: 16.877, lane: 3, type: 2 },
-    { time: 17.334, lane: 1, type: 2 },
-    { time: 17.794, lane: 2, type: 2 },
-    { time: 18.377, lane: 3, type: 0 },
-    { time: 18.696, lane: 0, type: 0 },
-    { time: 18.849, lane: 2, type: 2 },
-    { time: 19.025, lane: 1, type: 1 },
-    { time: 19.217, lane: 3, type: 1 },
-    { time: 19.404, lane: 0, type: 2 },
-    { time: 21.153, lane: 2, type: 0 },
-    { time: 21.681, lane: 3, type: 0 },
-    { time: 22.251, lane: 1, type: 0 },
-    { time: 22.877, lane: 1, type: 0 },
-    { time: 23.477, lane: 3, type: 2 },
-    { time: 24.033, lane: 1, type: 2 },
-    { time: 24.325, lane: 2, type: 1 },
-    { time: 26.475, lane: 0, type: 1 },
-    { time: 26.994, lane: 2, type: 0 },
-    { time: 27.43, lane: 3, type: 1 },
-    { time: 28.003, lane: 1, type: 2 },
-    { time: 28.285, lane: 2, type: 2 },
-    { time: 28.449, lane: 0, type: 0 },
-    { time: 28.62, lane: 3, type: 2 },
-    { time: 29.12, lane: 3, type: 1 },
-    { time: 30.713, lane: 1, type: 0 },
-    { time: 31.266, lane: 0, type: 0 },
-    { time: 33.101, lane: 2, type: 1 },
-    { time: 33.697, lane: 3, type: 0 },
-    { time: 34.301, lane: 2, type: 1 },
-    { time: 34.478, lane: 1, type: 2 },
-    { time: 34.801, lane: 0, type: 2 },
+    { time: 10.126, lane: 1, type: 2 },
+    { time: 10.145, lane: 4, type: 2 },
+    { time: 10.583, lane: 4, type: 0 },
+    { time: 11.257, lane: 3, type: 1 },
+    { time: 11.257, lane: 4, type: 1 },
+    { time: 12.031, lane: 1, type: 0 },
+    { time: 13.056, lane: 2, type: 1 },
+    { time: 13.886, lane: 4, type: 0 },
+    { time: 14.453, lane: 3, type: 1 },
+    { time: 14.823, lane: 1, type: 0 },
+    { time: 15.678, lane: 0, type: 1 },
+    { time: 16.282, lane: 4, type: 0 },
+    { time: 16.865, lane: 3, type: 0 },
+    { time: 19.28, lane: 2, type: 1 },
+    { time: 19.704, lane: 1, type: 1 },
+    { time: 20.182, lane: 4, type: 1 },
+    { time: 21.132, lane: 1, type: 0 },
+    { time: 21.67, lane: 3, type: 0 },
+    { time: 22.202, lane: 4, type: 2 },
+    { time: 22.852, lane: 3, type: 2 },
+    { time: 24.081, lane: 1, type: 0 },
+    { time: 24.683, lane: 4, type: 1 },
+    { time: 25.239, lane: 3, type: 0 },
+    { time: 25.602, lane: 1, type: 1 },
+    { time: 26.053, lane: 2, type: 2 },
+    { time: 26.485, lane: 4, type: 1 },
+    { time: 26.903, lane: 1, type: 0 },
+    { time: 27.365, lane: 3, type: 0 },
+    { time: 27.968, lane: 2, type: 1 },
+    { time: 28.03, lane: 0, type: 1 },
+    { time: 28.295, lane: 4, type: 2 },
+    { time: 28.433, lane: 1, type: 1 },
+    { time: 28.824, lane: 3, type: 0 },
+    { time: 29.246, lane: 2, type: 1 },
+    { time: 29.86, lane: 3, type: 0 },
+    { time: 29.861, lane: 4, type: 2 },
+    { time: 31.27, lane: 4, type: 1 },
+    { time: 31.595, lane: 4, type: 0 },
+    { time: 31.858, lane: 1, type: 2 },
+    { time: 32.489, lane: 3, type: 2 },
+    { time: 33.067, lane: 4, type: 2 },
+    { time: 33.656, lane: 3, type: 2 },
+    { time: 34.562, lane: 1, type: 0 },
+    { time: 34.889, lane: 1, type: 1 },
+    { time: 34.917, lane: 4, type: 2 },
+    { time: 34.962, lane: 0, type: 2 },
+    { time: 35.497, lane: 3, type: 2 },
+    { time: 35.792, lane: 1, type: 0 },
 ],
             mochimochi: [
-    { time: 5.096, lane: 3, type: 0 },
-    { time: 5.545, lane: 3, type: 2 },
-    { time: 7.715, lane: 2, type: 2 },
-    { time: 7.961, lane: 2, type: 2 },
-    { time: 8.143, lane: 2, type: 2 },
-    { time: 8.375, lane: 2, type: 0 },
-    { time: 8.604, lane: 2, type: 0 },
-    { time: 9.082, lane: 2, type: 0 },
-    { time: 9.342, lane: 3, type: 0 },
-    { time: 10.211, lane: 1, type: 1 },
-    { time: 11.002, lane: 2, type: 2 },
-    { time: 11.494, lane: 3, type: 0 },
-    { time: 11.706, lane: 3, type: 2 },
-    { time: 11.954, lane: 3, type: 0 },
-    { time: 12.169, lane: 3, type: 1 },
-    { time: 12.425, lane: 0, type: 2 },
-    { time: 12.705, lane: 2, type: 0 },
-    { time: 12.88, lane: 1, type: 2 },
-    { time: 13.159, lane: 3, type: 2 },
-    { time: 13.89, lane: 0, type: 0 },
-    { time: 14.41, lane: 1, type: 2 },
-    { time: 14.87, lane: 2, type: 1 },
-    { time: 15.377, lane: 3, type: 0 },
-    { time: 15.58, lane: 3, type: 2 },
-    { time: 15.796, lane: 3, type: 1 },
-    { time: 16.012, lane: 0, type: 0 },
-    { time: 16.275, lane: 2, type: 0 },
-    { time: 16.47, lane: 1, type: 0 },
-    { time: 16.745, lane: 2, type: 2 },
-    { time: 16.957, lane: 0, type: 2 },
-    { time: 17.708, lane: 3, type: 1 },
-    { time: 17.962, lane: 2, type: 1 },
-    { time: 18.196, lane: 1, type: 1 },
-    { time: 18.903, lane: 3, type: 0 },
-    { time: 19.343, lane: 2, type: 1 },
-    { time: 19.792, lane: 1, type: 1 },
-    { time: 20.1, lane: 3, type: 0 },
-    { time: 20.323, lane: 0, type: 1 },
-    { time: 20.576, lane: 1, type: 2 },
-    { time: 20.831, lane: 2, type: 1 },
-    { time: 21.111, lane: 3, type: 2 },
-    { time: 21.537, lane: 3, type: 2 },
-    { time: 21.999, lane: 0, type: 2 },
-    { time: 22.229, lane: 1, type: 2 },
-    { time: 22.523, lane: 2, type: 1 },
-    { time: 22.896, lane: 0, type: 0 },
-    { time: 23.445, lane: 3, type: 1 },
-    { time: 23.692, lane: 1, type: 2 },
-    { time: 23.991, lane: 0, type: 1 },
-    { time: 24.218, lane: 1, type: 2 },
-    { time: 24.523, lane: 0, type: 0 },
-    { time: 24.745, lane: 0, type: 2 },
-    { time: 25.345, lane: 3, type: 0 },
-    { time: 25.724, lane: 2, type: 2 },
-    { time: 26.321, lane: 1, type: 0 },
-    { time: 26.862, lane: 3, type: 1 },
-    { time: 27.717, lane: 2, type: 1 },
-    { time: 27.948, lane: 1, type: 2 },
-    { time: 28.206, lane: 0, type: 0 },
-    { time: 29.112, lane: 3, type: 0 },
-    { time: 30.141, lane: 0, type: 1 },
-    { time: 30.643, lane: 2, type: 1 },
-    { time: 30.868, lane: 2, type: 0 },
-    { time: 31.129, lane: 1, type: 2 },
-    { time: 31.382, lane: 0, type: 1 },
-    { time: 31.635, lane: 3, type: 1 },
-    { time: 31.84, lane: 1, type: 0 },
-    { time: 32.341, lane: 2, type: 0 },
-    { time: 33.024, lane: 3, type: 2 },
-    { time: 33.533, lane: 0, type: 1 },
-    { time: 34.041, lane: 2, type: 1 },
-    { time: 34.471, lane: 1, type: 2 },
-    { time: 35.009, lane: 3, type: 2 },
-    { time: 35.249, lane: 1, type: 1 },
-    { time: 35.47, lane: 2, type: 1 },
-    { time: 35.9, lane: 0, type: 0 },
-    { time: 36.175, lane: 3, type: 2 },
-    { time: 36.901, lane: 1, type: 0 },
-    { time: 37.387, lane: 2, type: 0 },
+    { time: 1.131, lane: 1, type: 1 },
+    { time: 1.54, lane: 2, type: 2 },
+    { time: 2.866, lane: 4, type: 0 },
+    { time: 3.263, lane: 3, type: 2 },
+    { time: 4.297, lane: 1, type: 2 },
+    { time: 4.998, lane: 4, type: 0 },
+    { time: 5.503, lane: 4, type: 0 },
+    { time: 6.714, lane: 1, type: 1 },
+    { time: 7.798, lane: 3, type: 1 },
+    { time: 7.969, lane: 3, type: 2 },
+    { time: 8.176, lane: 3, type: 0 },
+    { time: 8.387, lane: 3, type: 0 },
+    { time: 8.614, lane: 3, type: 2 },
+    { time: 8.825, lane: 4, type: 0 },
+    { time: 9.027, lane: 0, type: 1 },
+    { time: 9.339, lane: 3, type: 1 },
+    { time: 9.98, lane: 1, type: 2 },
+    { time: 11.048, lane: 2, type: 1 },
+    { time: 11.512, lane: 3, type: 0 },
+    { time: 11.717, lane: 3, type: 1 },
+    { time: 11.964, lane: 3, type: 1 },
+    { time: 12.198, lane: 3, type: 0 },
+    { time: 12.429, lane: 3, type: 2 },
+    { time: 12.675, lane: 4, type: 1 },
+    { time: 12.889, lane: 0, type: 1 },
+    { time: 13.121, lane: 3, type: 0 },
+    { time: 13.898, lane: 1, type: 2 },
+    { time: 13.911, lane: 0, type: 0 },
+    { time: 13.911, lane: 3, type: 2 },
+    { time: 13.912, lane: 4, type: 0 },
+    { time: 14.847, lane: 3, type: 0 },
+    { time: 15.301, lane: 3, type: 1 },
+    { time: 15.319, lane: 4, type: 1 },
+    { time: 15.524, lane: 3, type: 0 },
+    { time: 15.755, lane: 3, type: 0 },
+    { time: 15.986, lane: 3, type: 2 },
+    { time: 16.23, lane: 3, type: 2 },
+    { time: 16.513, lane: 1, type: 0 },
+    { time: 16.727, lane: 4, type: 1 },
+    { time: 16.978, lane: 3, type: 0 },
+    { time: 17.644, lane: 2, type: 0 },
+    { time: 17.927, lane: 1, type: 1 },
+    { time: 18.345, lane: 0, type: 2 },
+    { time: 18.924, lane: 3, type: 2 },
+    { time: 19.358, lane: 4, type: 2 },
+    { time: 19.814, lane: 3, type: 0 },
+    { time: 20.029, lane: 1, type: 1 },
+    { time: 20.286, lane: 4, type: 0 },
+    { time: 20.543, lane: 2, type: 2 },
+    { time: 20.754, lane: 3, type: 2 },
+    { time: 20.988, lane: 1, type: 0 },
+    { time: 21.569, lane: 3, type: 2 },
+    { time: 22.076, lane: 3, type: 0 },
+    { time: 22.28, lane: 1, type: 0 },
+    { time: 22.483, lane: 4, type: 0 },
+    { time: 22.766, lane: 2, type: 0 },
+    { time: 23.248, lane: 3, type: 2 },
+    { time: 23.439, lane: 1, type: 1 },
+    { time: 23.667, lane: 4, type: 2 },
+    { time: 23.886, lane: 0, type: 0 },
+    { time: 24.136, lane: 3, type: 2 },
+    { time: 24.347, lane: 1, type: 0 },
+    { time: 24.643, lane: 2, type: 0 },
+    { time: 25.404, lane: 4, type: 2 },
+    { time: 25.595, lane: 1, type: 2 },
+    { time: 25.86, lane: 3, type: 2 },
+    { time: 26.32, lane: 2, type: 1 },
+    { time: 26.829, lane: 3, type: 1 },
+    { time: 27.556, lane: 3, type: 0 },
+    { time: 28.034, lane: 1, type: 0 },
+    { time: 28.239, lane: 4, type: 0 },
+    { time: 28.485, lane: 0, type: 2 },
+    { time: 29.23, lane: 3, type: 2 },
+    { time: 30.212, lane: 2, type: 2 },
+    { time: 30.687, lane: 0, type: 0 },
+    { time: 30.689, lane: 2, type: 2 },
+    { time: 31.54, lane: 2, type: 1 },
+    { time: 31.548, lane: 0, type: 2 },
+    { time: 32.239, lane: 3, type: 1 },
+    { time: 32.255, lane: 4, type: 0 },
+    { time: 32.903, lane: 3, type: 2 },
+    { time: 33.938, lane: 3, type: 1 },
+    { time: 33.949, lane: 4, type: 2 },
+    { time: 34.355, lane: 0, type: 1 },
+    { time: 34.361, lane: 2, type: 2 },
+    { time: 34.37, lane: 3, type: 0 },
+    { time: 34.388, lane: 4, type: 0 },
+    { time: 35.336, lane: 0, type: 2 },
+    { time: 35.34, lane: 2, type: 2 },
+    { time: 35.341, lane: 3, type: 0 },
+    { time: 35.357, lane: 4, type: 0 },
+    { time: 36.064, lane: 1, type: 2 },
 ]
         };
+        
+        const keyMaps = {
+            left: { 'a': 0, 's': 1, 'd': 3, 'f': 4, ' ': 2 },
+            right: { 'j': 0, 'k': 1, 'l': 3, ';': 4, ' ': 2 }
+        };
+        let currentKeyMap = null;
 
-        let audio;
-        let notes = [];
-        let score = 0;
-        let combo = 0;
-        let particles = [];
-        let laneFlashes = [0, 0, 0, 0];
-        let isGameRunning = false;
-        let startTime = 0;
+        let audio, beatmap;
+        let notes = [], score = 0, combo = 0, particles = [];
+        let laneFlashes = [0, 0, 0, 0, 0];
+        let isGameRunning = false, startTime = 0;
         const noteSpeed = 3;
 
         const SABLE_COLORS = {
             base: ['#607C5D', '#5D4037', '#F3E5AB'],
             light: ['#83b97e', '#8d6e63', '#fff5d6']
         };
+        
+        // ★★★ 修正点: init関数を正しく定義 ★★★
+        function init() {
+            score = 0; combo = 0; notes = []; particles = [];
+            laneFlashes = [0, 0, 0, 0, 0];
+            isGameRunning = false; startTime = 0; currentKeyMap = null;
+
+            if(audio) {
+                audio.pause();
+                audio = null;
+            }
+
+            // UIを初期状態に戻す
+            songSelectView.style.display = 'block';
+            styleSelectView.style.display = 'none';
+            messageView.style.display = 'none';
+            gameOverView.style.display = 'none';
+            uiLayer.classList.remove('hidden');
+
+            updateUI();
+            
+            // ゲーム画面をクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawLanes();
+            drawJudgementLine();
+        }
 
         function selectSong(songName) {
-            // オーディオ要素を動的に生成
             audio = new Audio(`./${songName}.mp3`);
             audio.preload = "auto";
+            beatmap = beatmaps[songName];
+            if (!beatmap) return;
             
-            // 譜面を選択
-            const beatmap = beatmaps[songName];
-            if (!beatmap) {
-                console.error("譜面が見つかりません:", songName);
-                return;
-            }
-            
-            // 読み込みが完了してからゲームを開始
+            // ★★★ 修正点: UI表示を安全な方法に変更 ★★★
+            songSelectView.style.display = 'none';
+            messageView.innerHTML = `<p>ロード中...</p>`;
+            messageView.style.display = 'block';
+
             audio.addEventListener('canplaythrough', () => {
-                startGame(beatmap);
+                messageView.style.display = 'none';
+                styleSelectView.style.display = 'block';
             }, { once: true });
             
             audio.load();
-            uiLayer.innerHTML = `<p>ロード中...</p>`;
         }
 
-        function startGame(beatmap) {
-            score = 0;
-            combo = 0;
-            notes = [];
+        function selectPlayStyle(style) {
+            if (style === 'left' || style === 'right') {
+                currentKeyMap = keyMaps[style];
+            } else {
+                currentKeyMap = null; // タップモード
+            }
+            startGame();
+        }
+
+        function startGame() {
+            score = 0; combo = 0; notes = [];
             isGameRunning = true;
             uiLayer.classList.add('hidden');
-
             beatmap.forEach(createNote);
-            
             audio.currentTime = 0;
             audio.play();
             startTime = performance.now();
@@ -303,50 +358,43 @@
         }
 
         function createNote(noteData) {
-            notes.push({
-                ...noteData,
-                y: -NOTE_HEIGHT,
-                spawnTime: noteData.time - (JUDGEMENT_LINE_Y / (60 * noteSpeed)),
-                isHit: false
-            });
+            notes.push({ ...noteData, y: -NOTE_HEIGHT, spawnTime: noteData.time - (JUDGEMENT_LINE_Y / (60 * noteSpeed)), isHit: false });
         }
 
         function gameLoop() {
             if (!isGameRunning) return;
-            
             const currentTime = (performance.now() - startTime) / 1000;
-            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawLanes();
             drawJudgementLine();
-
-            notes.forEach((note) => {
+            notes.forEach(note => {
                 if (!note.isHit) {
-                    const timeSinceSpawn = currentTime - note.spawnTime;
-                    note.y = timeSinceSpawn * 60 * noteSpeed - NOTE_HEIGHT;
+                    note.y = (currentTime - note.spawnTime) * 60 * noteSpeed - NOTE_HEIGHT;
                     drawNote(note);
-                    if (note.y > canvas.height) {
-                        note.isHit = true;
-                        showFeedback('MISS');
-                        resetCombo();
-                    }
+                    if (note.y > canvas.height) { note.isHit = true; showFeedback('MISS'); resetCombo(); }
                 }
             });
-            
             notes = notes.filter(note => !note.isHit || note.y <= canvas.height);
-
-            particles.forEach((p, i) => {
-                p.update(); p.draw();
-                if (p.alpha <= 0) particles.splice(i, 1);
-            });
-
+            particles.forEach((p, i) => { p.update(); p.draw(); if (p.alpha <= 0) particles.splice(i, 1); });
             if (audio.ended) {
-                isGameRunning = false;
-                uiLayer.innerHTML = `<div><p>FINISH!</p><p>SCORE: ${score}</p><button class="song-select-button" onclick="location.reload()">曲選択に戻る</button></div>`;
-                uiLayer.classList.remove('hidden');
+                gameOver();
             } else {
                 requestAnimationFrame(gameLoop);
             }
+        }
+        
+        // ★★★ 修正点: ゲームオーバー処理を安全な方法に変更 ★★★
+        function gameOver() {
+            isGameRunning = false;
+            gameOverView.innerHTML = `<div><p>FINISH!</p><p>SCORE: ${score}</p><button class="ui-button" id="restartButton">曲選択に戻る</button></div>`;
+            
+            songSelectView.style.display = 'none';
+            styleSelectView.style.display = 'none';
+            messageView.style.display = 'none';
+            gameOverView.style.display = 'block';
+            uiLayer.classList.remove('hidden');
+
+            document.getElementById('restartButton').addEventListener('click', init);
         }
         
         function drawLanes() {
@@ -381,19 +429,13 @@
             const targetTime = audio.currentTime;
             let bestNoteIndex = -1;
             let minDiff = Infinity;
-
             notes.forEach((note, index) => {
                 if (note.lane === lane && !note.isHit) {
                     const diff = Math.abs(note.time - targetTime);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        bestNoteIndex = index;
-                    }
+                    if (diff < minDiff) { minDiff = diff; bestNoteIndex = index; }
                 }
             });
-
             laneFlashes[lane] = 0.5;
-
             if (bestNoteIndex !== -1 && minDiff < 0.3) {
                 const note = notes[bestNoteIndex];
                 note.isHit = true;
@@ -433,16 +475,39 @@
             }
         }
 
-        const keyMap = { 'd': 0, 'f': 1, 'j': 2, 'k': 3 };
+        // --- Input Handling ---
         document.addEventListener('keydown', (e) => {
-            if (keyMap[e.key] !== undefined) handleInput(keyMap[e.key]);
+            if (currentKeyMap) {
+                const key = e.key === ' ' ? ' ' : e.key.toLowerCase();
+                if (currentKeyMap[key] !== undefined) {
+                    handleInput(currentKeyMap[key]);
+                }
+            }
+        });
+
+        function handlePointerInput(event) {
+            event.preventDefault();
+            if (currentKeyMap) return; // キーボードモード中はタップ無効
+            const rect = canvas.getBoundingClientRect();
+            const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+            const touchX = clientX - rect.left;
+            const lane = Math.floor(touchX / (rect.width / LANES));
+            if (lane >= 0 && lane < LANES) handleInput(lane);
+        }
+        
+        canvas.addEventListener('touchstart', handlePointerInput, { passive: false });
+        canvas.addEventListener('mousedown', handlePointerInput);
+        
+        // --- UI Initialization ---
+        document.querySelectorAll('#song-select-view .ui-button').forEach(button => {
+            button.addEventListener('click', (e) => selectSong(e.target.dataset.song));
+        });
+        document.querySelectorAll('#style-select-view .ui-button').forEach(button => {
+            button.addEventListener('click', (e) => selectPlayStyle(e.target.dataset.style));
         });
         
-        document.querySelectorAll('.song-select-button').forEach(button => {
-            button.addEventListener('click', (e) => {
-                selectSong(e.target.dataset.song);
-            });
-        });
+        // ★★★ 修正点: 最後にinit()を呼び出す ★★★
+        init();
     });
     </script>
 </body>
