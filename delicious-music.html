@@ -160,13 +160,15 @@
             const nowPlayingDisplay = document.getElementById('now-playing');
             const stopButton = document.getElementById('stop-button');
 
+            const playlists =  // --- 音楽ファイルの設定 ---
+            // ▼▼▼▼▼ GitHub上のMP3ファイルを参照 ▼▼▼▼▼
             const playlists = [
-                { title: "Sablé", url: "https://cdn.pixabay.com/audio/2023/10/11/audio_a7dc882998.mp3" },
-                { title: "Dorayaki", url: "https://cdn.pixabay.com/audio/2022/08/02/audio_823b551328.mp3" },
-                { title: "Dacquoise", url: "https://cdn.pixabay.com/audio/2022/01/24/audio_316804a883.mp3" },
-                { title: "Le Café", url: "https://cdn.pixabay.com/audio/2022/05/23/audio_b8558f3c46.mp3" }
+                { title: "Sablé", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/sablé.mp3" },
+                { title: "Dorayaki", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/dorayaki.mp3" },
+                { title: "Dacquoise", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/dacquoise.mp3" },
+                { title: "Le Café", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/coffee.mp3" }
             ];
-
+            // ▲▲▲▲▲ ここまで ▲▲▲▲▲
             let players = [];
             let waveform;
             let currentTrackIndex = -1;
