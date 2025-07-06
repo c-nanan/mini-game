@@ -12,9 +12,9 @@
             font-family: 'M PLUS Rounded 1c', sans-serif;
             touch-action: manipulation;
         }
-        .bg-coffee-farm { background-image: linear-gradient(to bottom, #87CEEB, #90EE90); }
-        .bg-sorting-factory { background-image: linear-gradient(to bottom, #D3D3D3, #A9A9A9); }
-        .bg-roastery { background-image: linear-gradient(to bottom, #A0522D, #8B4513); }
+        .bg-coffee-farm { background: linear-gradient(to bottom, #87CEEB, #90EE90); }
+        .bg-sorting-factory { background: linear-gradient(to bottom, #D3D3D3, #A9A9A9); }
+        .bg-roastery { background: linear-gradient(to bottom, #A0522D, #8B4513); }
         .game-canvas { cursor: pointer; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
         .btn { transition: all 0.2s ease-in-out; }
         .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,0.15); }
@@ -66,7 +66,7 @@
         </div>
 
         <!-- ゲーム画面 -->
-        <div id="game-screen" class="hidden">
+        <div id="game-screen" class="hidden relative">
             <div id="info-bar" class="flex justify-between items-center mb-2 p-3 bg-white/50 rounded-lg shadow">
                 <div><span class="font-bold">ステージ: <span id="stage-display">1</span></span></div>
                 <div><span class="font-bold">スコア: <span id="score-display">0</span>%</span></div>
@@ -76,7 +76,16 @@
                     </div>
                 </div>
             </div>
-            <canvas id="game-canvas" class="game-canvas w-full"></canvas>
+            
+            <div id="game-area" class="relative">
+                <canvas id="game-canvas" class="game-canvas w-full"></canvas>
+                <!-- お手本表示エリア -->
+                <div id="sample-display" class="absolute bottom-2 left-2 bg-white/70 p-2 rounded-lg shadow-md">
+                    <p id="sample-title" class="text-xs font-bold text-center text-gray-700 mb-1"></p>
+                    <canvas id="sample-canvas" width="120" height="50"></canvas>
+                </div>
+            </div>
+
             <div id="stage-intro" class="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-center p-4 rounded-xl hidden">
                 <div class="bg-white/80 text-black p-8 rounded-lg shadow-2xl">
                     <h2 id="stage-title" class="text-3xl font-bold mb-4"></h2>
@@ -117,6 +126,9 @@
         const retryButton = document.getElementById('retry-button');
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
+        const sampleCanvas = document.getElementById('sample-canvas');
+        const sampleCtx = sampleCanvas.getContext('2d');
+        const sampleTitle = document.getElementById('sample-title');
         const stageDisplay = document.getElementById('stage-display');
         const scoreDisplay = document.getElementById('score-display');
         const timerBar = document.getElementById('timer-bar');
@@ -146,23 +158,93 @@
         let wrongClicks = 0;
         let gameActive = false;
 
-        const stageConfig = {
-            1: { title: 'ステージ1: コーヒー農園', description: '赤い完熟チェリーだけを収穫しよう！', backgroundClass: 'bg-coffee-farm', beanTypes: { good: { color: '#D92E2E', type: 'good' }, bad1: { color: '#3A9D23', type: 'bad' }, bad2: { color: '#E8D63A', type: 'bad' }, }, targetType: 'good' },
-            2: { title: 'ステージ2: 生豆の選別', description: '欠点豆（黒い豆や虫食い豆）を取り除こう！', backgroundClass: 'bg-sorting-factory', beanTypes: { good: { color: '#A8D8B0', type: 'good' }, bad1: { color: '#5A5A5A', type: 'bad' }, bad2: { color: '#785E2F', type: 'bad' }, }, targetType: 'bad' },
-            3: { title: 'ステージ3: 焙煎豆の選別', description: '色ムラのある豆や焦げすぎの豆を取り除こう！', backgroundClass: 'bg-roastery', beanTypes: { good: { color: '#6F4E37', type: 'good' }, bad1: { color: '#D2B48C', type: 'bad' }, bad2: { color: '#3B2F2F', type: 'bad' }, }, targetType: 'bad' }
-        };
-
-        // --- Audio Settings (Tone.js) ---
-        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
-        const sounds = { correct: 'C5', wrong: 'C3', stageClear: ['C4', 'E4', 'G4'] };
-        
-        function playSound(note) {
-            if (Tone.context.state !== 'running') { Tone.start(); }
-            synth.triggerAttackRelease(note, '8n', Tone.now());
+        // --- Bean Drawing Functions ---
+        function drawCherry(context, x, y, radius, color, stemColor = '#006400') {
+            context.fillStyle = color;
+            context.beginPath();
+            context.ellipse(x, y, radius, radius * 0.9, 0, 0, 2 * Math.PI);
+            context.fill();
+            // Stem
+            context.fillStyle = stemColor;
+            context.beginPath();
+            context.arc(x, y - radius * 0.7, radius * 0.2, 0, 2 * Math.PI);
+            context.fill();
         }
 
-        // --- BGM Settings (MP3 from GitHub) ---
-        // (修正) 新しいフォルダ構成に合わせてURLを更新しました。
+        function drawGreenBean(context, x, y, radius, color, hasDefect = false) {
+            context.fillStyle = color;
+            context.beginPath();
+            context.ellipse(x, y, radius * 0.7, radius, 0, 0, 2 * Math.PI);
+            context.fill();
+            // Center line
+            context.strokeStyle = 'rgba(0,0,0,0.2)';
+            context.lineWidth = 1;
+            context.beginPath();
+            context.moveTo(x, y - radius * 0.9);
+            context.quadraticCurveTo(x + radius * 0.1, y, x, y + radius * 0.9);
+            context.stroke();
+            if (hasDefect) {
+                context.fillStyle = '#4d3a2a';
+                context.beginPath();
+                context.arc(x + radius * 0.2, y - radius * 0.3, radius * 0.2, 0, 2 * Math.PI);
+                context.fill();
+            }
+        }
+
+        function drawRoastedBean(context, x, y, radius, color) {
+            context.fillStyle = color;
+            context.beginPath();
+            context.ellipse(x, y, radius * 0.75, radius, Math.PI / 8, 0, 2 * Math.PI);
+            context.fill();
+            // Center line
+            context.strokeStyle = 'rgba(0,0,0,0.3)';
+            context.lineWidth = 1.5;
+            context.beginPath();
+            context.moveTo(x - radius * 0.3, y - radius * 0.8);
+            context.quadraticCurveTo(x, y, x + radius * 0.3, y + radius * 0.8);
+            context.stroke();
+        }
+        
+        const stageConfig = {
+            1: {
+                title: 'ステージ1: チェリー収穫',
+                description: '赤い完熟チェリーだけをタップしよう！',
+                backgroundClass: 'bg-coffee-farm',
+                targetType: 'good',
+                sampleTitle: 'タップするお手本',
+                beanTypes: {
+                    good: { type: 'good', draw: (ctx, x, y, r) => drawCherry(ctx, x, y, r, '#D92E2E') },
+                    bad1: { type: 'bad', draw: (ctx, x, y, r) => drawCherry(ctx, x, y, r, '#3A9D23') },
+                    bad2: { type: 'bad', draw: (ctx, x, y, r) => drawCherry(ctx, x, y, r, '#E8D63A') },
+                }
+            },
+            2: {
+                title: 'ステージ2: 生豆の選別',
+                description: '欠点豆（黒い豆・虫食い豆）をタップしよう！',
+                backgroundClass: 'bg-sorting-factory',
+                targetType: 'bad',
+                sampleTitle: 'タップするお手本',
+                beanTypes: {
+                    good: { type: 'good', draw: (ctx, x, y, r) => drawGreenBean(ctx, x, y, r, '#A8D8B0') },
+                    bad1: { type: 'bad', draw: (ctx, x, y, r) => drawGreenBean(ctx, x, y, r, '#5A5A5A') }, // Black bean
+                    bad2: { type: 'bad', draw: (ctx, x, y, r) => drawGreenBean(ctx, x, y, r, '#785E2F', true) }, // Insect
+                }
+            },
+            3: {
+                title: 'ステージ3: 焙煎豆の選別',
+                description: '欠点豆（色ムラ・焦げすぎ）をタップしよう！',
+                backgroundClass: 'bg-roastery',
+                targetType: 'bad',
+                sampleTitle: 'タップするお手本',
+                beanTypes: {
+                    good: { type: 'good', draw: (ctx, x, y, r) => drawRoastedBean(ctx, x, y, r, '#6F4E37') },
+                    bad1: { type: 'bad', draw: (ctx, x, y, r) => drawRoastedBean(ctx, x, y, r, '#D2B48C') }, // Under-roasted
+                    bad2: { type: 'bad', draw: (ctx, x, y, r) => drawRoastedBean(ctx, x, y, r, '#3B2F2F') }, // Over-roasted
+                }
+            }
+        };
+
+        // --- Audio Settings (BGM Only) ---
         const relaxMusicURL = "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/games/procoffee-game/mochimochi.mp3"; 
         const sakuSakuMusicURL = "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/games/procoffee-game/sakusaku.mp3";
 
@@ -175,23 +257,20 @@
         Tone.loaded().then(() => {
             bgmReady = true;
             console.log("BGMの読み込みが完了しました。");
-            bgmRelaxBtn.disabled = false;
-            bgmSakuBtn.disabled = false;
-            bgmStopBtn.disabled = false;
-            bgmRelaxBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            bgmSakuBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            bgmStopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            [bgmRelaxBtn, bgmSakuBtn, bgmStopBtn].forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
             bgmRelaxBtn.textContent = 'リラックス';
             bgmSakuBtn.textContent = 'サクサク';
         }).catch(e => {
             console.error("BGMの読み込みに失敗しました:", e);
-            bgmRelaxBtn.textContent = '読込失敗';
-            bgmSakuBtn.textContent = '読込失敗';
+            [bgmRelaxBtn, bgmSakuBtn].forEach(btn => btn.textContent = '読込失敗');
         });
 
         function playBGM(type) {
-             if (!bgmReady) { console.warn("BGM is not ready yet."); return; }
-             if (Tone.context.state !== 'running') { Tone.start(); }
+             if (!bgmReady) return;
+             if (Tone.context.state !== 'running') Tone.start();
              if (type !== 'relax' && bgmRelax.state === 'started') bgmRelax.stop();
              if (type !== 'saku' && bgmSaku.state === 'started') bgmSaku.stop();
              if (type === 'relax' && bgmRelax.state !== 'started') bgmRelax.start();
@@ -212,7 +291,7 @@
             startScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
             currentStage = 1;
-            score = 0; // Reset score on new game
+            score = 0;
             showStageIntro();
         });
 
@@ -226,6 +305,23 @@
             startScreen.classList.remove('hidden');
             stopBGM();
         });
+        
+        function updateSampleDisplay() {
+            const config = stageConfig[currentStage];
+            sampleTitle.textContent = config.sampleTitle;
+            sampleCtx.clearRect(0, 0, sampleCanvas.width, sampleCanvas.height);
+            
+            const sampleBeans = Object.values(config.beanTypes).filter(b => b.type === config.targetType);
+            const radius = 18;
+            const y = sampleCanvas.height / 2;
+            const totalWidth = sampleBeans.length * (radius * 2 + 10) - 10;
+            let startX = (sampleCanvas.width - totalWidth) / 2;
+
+            sampleBeans.forEach(bean => {
+                bean.draw(sampleCtx, startX, y, radius);
+                startX += radius * 2 + 10;
+            });
+        }
 
         // --- Stage Management ---
         function showStageIntro() {
@@ -233,11 +329,13 @@
             const config = stageConfig[currentStage];
             stageTitle.textContent = config.title;
             stageDescription.textContent = config.description;
-            gameScreen.className = `w-full max-w-lg mx-auto p-4 min-h-screen ${config.backgroundClass}`;
+            // This class is on the parent now, not the game-screen
+            document.body.className = `bg-gray-100 flex items-center justify-center min-h-screen ${config.backgroundClass}`;
             stageDisplay.textContent = currentStage;
             const prevAvg = currentStage > 1 ? Math.round(score / (currentStage - 1)) : 0;
             scoreDisplay.textContent = `${prevAvg}%`;
             timerBar.style.width = '100%';
+            updateSampleDisplay();
             stageIntro.classList.remove('hidden');
         }
         
@@ -267,14 +365,13 @@
             clearTimeout(timer);
             
             const potentialScore = totalTargets > 0 ? (clickedTargets / totalTargets) * 100 : 100;
-            const penalty = totalTargets > 0 ? (wrongClicks / totalTargets) * 50 : 0;
+            const penalty = totalTargets > 0 ? (wrongClicks / (beans.length + clickedTargets)) * 50 : 0; // Penalty based on total beans
             const finalStageScore = Math.max(0, Math.round(potentialScore - penalty));
             
             score += finalStageScore;
 
             if (currentStage < totalStages) {
                 currentStage++;
-                playSound(sounds.stageClear);
                 setTimeout(showStageIntro, 1500);
             } else {
                 showResult();
@@ -285,6 +382,7 @@
         function showResult() {
             gameScreen.classList.add('hidden');
             resultScreen.classList.remove('hidden');
+            document.body.className = 'bg-gray-100 flex items-center justify-center min-h-screen';
             
             const finalAverageScore = Math.round(score / totalStages);
             finalScoreDisplay.textContent = finalAverageScore;
@@ -317,7 +415,7 @@
         function setupCanvas() {
             const container = document.getElementById('game-container');
             canvas.width = container.clientWidth;
-            canvas.height = container.clientWidth * 0.75;
+            canvas.height = container.clientWidth * 1.25; // Make canvas taller
         }
 
         function createBean() {
@@ -328,26 +426,17 @@
             const beanInfo = config.beanTypes[randomKey];
 
             const bean = {
-                x: Math.random() * (canvas.width - 30) + 15,
-                y: -20,
-                radius: canvas.width / 25,
-                color: beanInfo.color,
+                x: Math.random() * (canvas.width - 40) + 20,
+                y: -30,
+                radius: canvas.width / 18,
+                draw: beanInfo.draw,
                 type: beanInfo.type,
-                speed: (Math.random() * 1 + 1) * (1 + currentStage * 0.1),
+                speed: (Math.random() * 1.5 + 1) * (1 + currentStage * 0.15),
                 clicked: false
             };
             
             beans.push(bean);
             if (bean.type === config.targetType) { totalTargets++; }
-        }
-
-        function drawBean(bean) {
-            ctx.beginPath();
-            ctx.arc(bean.x, bean.y, bean.radius, 0, Math.PI * 2);
-            ctx.fillStyle = bean.color;
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-            ctx.stroke();
         }
 
         function gameLoop() {
@@ -361,7 +450,7 @@
                     beans.splice(i, 1);
                     continue;
                 }
-                if(!bean.clicked) { drawBean(bean); }
+                if(!bean.clicked) { bean.draw(ctx, bean.x, bean.y, bean.radius); }
             }
             
             const currentPotentialScore = totalTargets > 0 ? (clickedTargets / totalTargets) * 100 : 0;
@@ -391,11 +480,14 @@
                     const distance = Math.sqrt((x - bean.x)**2 + (y - bean.y)**2);
                     if (distance < bean.radius) {
                         const config = stageConfig[currentStage];
-                        if (bean.type === config.targetType) { clickedTargets++; playSound(sounds.correct); } 
-                        else { wrongClicks++; playSound(sounds.wrong); }
+                        if (bean.type === config.targetType) {
+                            clickedTargets++;
+                        } else {
+                            wrongClicks++;
+                        }
                         bean.clicked = true;
                         beans.splice(i, 1);
-                        return; // Process one bean per click/tap
+                        return;
                     }
                 }
             }
