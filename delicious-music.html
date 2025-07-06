@@ -161,15 +161,17 @@
             const stopButton = document.getElementById('stop-button');
 
             // --- 音楽ファイルの設定 ---
-            // ▼▼▼▼▼ GitHub上のMP3ファイルを参照 ▼▼▼▼▼
+            // (修正) 2重宣言されていた `const playlists` を修正しました。
             const playlists = [
-                // (修正) URL内のファイル名 'sablé.mp3' に特殊文字が含まれていたため、'sable.mp3' に修正しました。
+                // 注意: sable.mp3 はまだアップロードされていないため、再生されません。
                 { title: "Sablé", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/sable.mp3" },
+                // 注意: dorayaki.mp3 はまだアップロードされていないため、再生されません。
                 { title: "Dorayaki", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/dorayaki.mp3" },
+                // dacquoise.mp3 はアップロードされているので再生されます。
                 { title: "Dacquoise", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/dacquoise.mp3" },
+                // 注意: coffee.mp3 はまだアップロードされていないため、再生されません。
                 { title: "Le Café", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/coffee.mp3" }
             ];
-            // ▲▲▲▲▲ ここまで ▲▲▲▲▲
             
             let players = [];
             let waveform;
@@ -180,16 +182,31 @@
                 waveform = new Tone.Waveform();
                 Tone.Destination.connect(waveform);
                 players = playlists.map(track => new Tone.Player({ url: track.url, loop: true, fadeOut: 0.5 }).toDestination());
-                Tone.loaded().then(() => { audioReady = true; }).catch(e => { console.error("音楽の読み込みに失敗:", e); });
+                Tone.loaded().then(() => { 
+                    audioReady = true; 
+                    console.log("音楽の読み込みが完了しました。");
+                }).catch(e => { 
+                    console.error("音楽の読み込みに失敗:", e); 
+                    nowPlayingDisplay.textContent = "一部の音楽が読み込めませんでした。";
+                    playerInfo.classList.remove('opacity-0');
+                });
             }
 
             function playTrack(index) {
                 if (!audioReady || index === currentTrackIndex) return;
                 if (Tone.context.state !== 'running') Tone.start();
                 if (currentTrackIndex !== -1) players[currentTrackIndex].stop();
-                currentTrackIndex = index;
-                players[currentTrackIndex].start();
-                updateUI(playlists[currentTrackIndex].title);
+                
+                // 読み込みに成功したかチェック
+                if (players[index].loaded) {
+                    currentTrackIndex = index;
+                    players[currentTrackIndex].start();
+                    updateUI(playlists[currentTrackIndex].title);
+                } else {
+                    console.error(`${playlists[index].title} は読み込まれていません。`);
+                    nowPlayingDisplay.textContent = `「${playlists[index].title}」は読み込めませんでした。`;
+                    playerInfo.classList.remove('opacity-0');
+                }
             }
 
             function stopAllMusic() {
