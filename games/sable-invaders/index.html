@@ -75,7 +75,7 @@
             pointer-events: none;
         }
         #ui-layer.hidden { display: none; }
-        #ui-layer button {
+        #ui-layer button, #ui-layer a {
             font-family: 'Noto Serif JP', serif;
             font-size: 0.8em;
             padding: 10px 20px;
@@ -86,8 +86,8 @@
             cursor: pointer;
             pointer-events: auto;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            text-decoration: none;
         }
-        /* ★★★ 追加: ゲームオーバー画面のボタンスタイル ★★★ */
         .game-over-buttons {
             display: flex;
             justify-content: center;
@@ -246,7 +246,6 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // ★★★ 変更点: ゲームオーバー処理を更新 ★★★
         function gameOver() {
             isGameOver = true;
             uiLayer.innerHTML = `
@@ -255,16 +254,12 @@
                     <p>SCORE: ${score}</p>
                     <div class="game-over-buttons">
                         <button id="restartButton">もう一度プレイ</button>
-                        <button id="portalButton">ポータルに戻る</button>
+                        <a href="../../" class="portal-button">ポータルに戻る</a>
                     </div>
                 </div>`;
             uiLayer.classList.remove('hidden');
             
             document.getElementById('restartButton').addEventListener('click', startGame);
-            document.getElementById('portalButton').addEventListener('click', () => {
-                // ポータルページ（2階層上）に戻る
-                window.location.href = '../../';
-            });
         }
 
         function nextWave() {
@@ -548,14 +543,21 @@
             clearInterval(shootInterval);
         }
 
+        // ★★★ 修正点: スペースキーのデフォルト動作を無効化 ★★★
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft') player.dx = -player.speed;
             if (e.key === 'ArrowRight') player.dx = player.speed;
-            if (e.key === ' ' || e.key === 'Spacebar') handleShootStart();
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault(); // これが重要！
+                handleShootStart();
+            }
         });
         document.addEventListener('keyup', (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.dx = 0;
-            if (e.key === ' ' || e.key === 'Spacebar') handleShootEnd();
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                handleShootEnd();
+            }
         });
 
         const leftBtn = document.getElementById('leftBtn');
