@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ハンドピックゲーム！</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            touch-action: manipulation;
+        }
+        .bg-coffee-farm { background-image: linear-gradient(to bottom, #87CEEB, #90EE90); }
+        .bg-sorting-factory { background-image: linear-gradient(to bottom, #D3D3D3, #A9A9A9); }
+        .bg-roastery { background-image: linear-gradient(to bottom, #A0522D, #8B4513); }
+        .game-canvas { cursor: pointer; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .btn { transition: all 0.2s ease-in-out; }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,0.15); }
+        .btn:active:not(:disabled) { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .modal-content { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .coffee-cup {
+            width: 150px; height: 120px; border: 10px solid #fff; border-radius: 0 0 50px 50px;
+            position: relative; background-color: #c6c6c6; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .coffee-cup::before {
+            content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            width: 120%; height: 20px; background: #fff; border-radius: 10px;
+        }
+        .coffee-cup::after {
+            content: ''; position: absolute; right: -40px; top: 10px; width: 30px; height: 60px;
+            border: 10px solid #fff; border-left: none; border-radius: 0 25px 25px 0;
+        }
+        .steam {
+            position: absolute; height: 50px; width: 2px; background: #fff; border-radius: 50%;
+            opacity: 0; animation: steam-animation 3s infinite;
+        }
+        .steam.one { top: -60px; left: 40px; animation-delay: 0s; }
+        .steam.two { top: -70px; left: 80px; animation-delay: 1.5s; }
+        .steam.three { top: -55px; left: 110px; animation-delay: 0.5s; }
+        @keyframes steam-animation {
+            0% { transform: translateY(0) scaleX(1); opacity: 0; }
+            15% { opacity: 0.8; }
+            50% { transform: translateY(-40px) scaleX(3); opacity: 0.4; }
+            100% { transform: translateY(-80px) scaleX(1); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div id="game-container" class="w-full max-w-lg mx-auto p-4">
+
+        <!-- スタート画面 -->
+        <div id="start-screen" class="text-center p-8 bg-white rounded-xl shadow-lg">
+            <h1 class="text-3xl md:text-4xl font-bold text-amber-800">ハンドピックゲーム！</h1>
+            <img src="https://placehold.co/300x150/F5DEB3/4A2C2A?text=Coffee%20Beans" alt="コーヒー豆のイラスト" class="mx-auto my-6 rounded-lg">
+            <p class="text-gray-600 mb-6">全ての欠点豆を制限時間内に取り除いて、<br>美味しいコーヒーを飲もう！</p>
+            <button id="start-button" class="btn bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-full text-lg">
+                ゲームスタート
+            </button>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div id="game-screen" class="hidden">
+            <div id="info-bar" class="flex justify-between items-center mb-2 p-3 bg-white/50 rounded-lg shadow">
+                <div><span class="font-bold">ステージ: <span id="stage-display">1</span></span></div>
+                <div><span class="font-bold">スコア: <span id="score-display">0</span>%</span></div>
+                <div class="w-1/3">
+                    <div class="w-full bg-gray-300 rounded-full h-4">
+                        <div id="timer-bar" class="bg-blue-500 h-4 rounded-full transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+            <canvas id="game-canvas" class="game-canvas w-full"></canvas>
+            <div id="stage-intro" class="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-center p-4 rounded-xl hidden">
+                <div class="bg-white/80 text-black p-8 rounded-lg shadow-2xl">
+                    <h2 id="stage-title" class="text-3xl font-bold mb-4"></h2>
+                    <p id="stage-description" class="text-lg mb-6"></p>
+                    <button id="stage-start-button" class="btn bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded-full">スタート</button>
+                </div>
+            </div>
+            <div class="mt-2 flex justify-center items-center space-x-4">
+                <span class="text-sm font-bold text-gray-700">BGM:</span>
+                <button id="bgm-relax" class="btn bg-sky-500 text-white py-1 px-3 rounded-full text-sm opacity-50 cursor-not-allowed" disabled>読込中...</button>
+                <button id="bgm-saku" class="btn bg-pink-500 text-white py-1 px-3 rounded-full text-sm opacity-50 cursor-not-allowed" disabled>読込中...</button>
+                <button id="bgm-stop" class="btn bg-gray-400 text-white py-1 px-3 rounded-full text-sm opacity-50 cursor-not-allowed" disabled>OFF</button>
+            </div>
+        </div>
+
+        <!-- 結果画面 -->
+        <div id="result-screen" class="hidden text-center p-8 bg-white rounded-xl shadow-lg">
+             <h2 class="text-2xl font-bold mb-2">結果発表！</h2>
+            <p class="mb-4">あなたのスコアは <span id="final-score" class="text-3xl font-bold text-amber-700"></span> 点でした！</p>
+            <div class="flex justify-center my-6">
+                <div id="result-cup" class="coffee-cup">
+                    <div class="steam one"></div><div class="steam two"></div><div class="steam three"></div>
+                </div>
+            </div>
+            <img id="result-image" src="" alt="コーヒーの画像" class="mx-auto mb-4 rounded-lg hidden w-48 h-48 object-cover">
+            <h3 id="result-title" class="text-2xl font-bold mb-2"></h3>
+            <p id="result-message" class="text-gray-600 mb-6"></p>
+            <button id="retry-button" class="btn bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-full text-lg">もう一度挑戦</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const startButton = document.getElementById('start-button');
+        const retryButton = document.getElementById('retry-button');
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const stageDisplay = document.getElementById('stage-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const timerBar = document.getElementById('timer-bar');
+        const stageIntro = document.getElementById('stage-intro');
+        const stageTitle = document.getElementById('stage-title');
+        const stageDescription = document.getElementById('stage-description');
+        const stageStartButton = document.getElementById('stage-start-button');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const resultCup = document.getElementById('result-cup');
+        const resultImage = document.getElementById('result-image');
+        const resultTitle = document.getElementById('result-title');
+        const resultMessage = document.getElementById('result-message');
+        const bgmRelaxBtn = document.getElementById('bgm-relax');
+        const bgmSakuBtn = document.getElementById('bgm-saku');
+        const bgmStopBtn = document.getElementById('bgm-stop');
+
+        // --- Game Settings ---
+        let currentStage = 1;
+        const totalStages = 3;
+        const stageDuration = 20000; // 20 seconds
+        let timer;
+        let gameInterval;
+        let beans = [];
+        let score = 0;
+        let totalTargets = 0;
+        let clickedTargets = 0;
+        let wrongClicks = 0;
+        let gameActive = false;
+
+        const stageConfig = {
+            1: { title: 'ステージ1: コーヒー農園', description: '赤い完熟チェリーだけを収穫しよう！', backgroundClass: 'bg-coffee-farm', beanTypes: { good: { color: '#D92E2E', type: 'good' }, bad1: { color: '#3A9D23', type: 'bad' }, bad2: { color: '#E8D63A', type: 'bad' }, }, targetType: 'good' },
+            2: { title: 'ステージ2: 生豆の選別', description: '欠点豆（黒い豆や虫食い豆）を取り除こう！', backgroundClass: 'bg-sorting-factory', beanTypes: { good: { color: '#A8D8B0', type: 'good' }, bad1: { color: '#5A5A5A', type: 'bad' }, bad2: { color: '#785E2F', type: 'bad' }, }, targetType: 'bad' },
+            3: { title: 'ステージ3: 焙煎豆の選別', description: '色ムラのある豆や焦げすぎの豆を取り除こう！', backgroundClass: 'bg-roastery', beanTypes: { good: { color: '#6F4E37', type: 'good' }, bad1: { color: '#D2B48C', type: 'bad' }, bad2: { color: '#3B2F2F', type: 'bad' }, }, targetType: 'bad' }
+        };
+
+        // --- Audio Settings (Tone.js) ---
+        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        const sounds = { correct: 'C5', wrong: 'C3', stageClear: ['C4', 'E4', 'G4'] };
+        
+        function playSound(note) {
+            if (Tone.context.state !== 'running') { Tone.start(); }
+            synth.triggerAttackRelease(note, '8n', Tone.now());
+        }
+
+        // --- BGM Settings (MP3 from GitHub) ---
+        // (修正) 新しいフォルダ構成に合わせてURLを更新しました。
+        const relaxMusicURL = "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/games/procoffee-game/mochimochi.mp3"; 
+        const sakuSakuMusicURL = "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/games/procoffee-game/sakusaku.mp3";
+
+        let bgmRelax, bgmSaku;
+        let bgmReady = false;
+
+        bgmRelax = new Tone.Player({ url: relaxMusicURL, loop: true, fadeOut: 0.5 }).toDestination();
+        bgmSaku = new Tone.Player({ url: sakuSakuMusicURL, loop: true, fadeOut: 0.5 }).toDestination();
+        
+        Tone.loaded().then(() => {
+            bgmReady = true;
+            console.log("BGMの読み込みが完了しました。");
+            bgmRelaxBtn.disabled = false;
+            bgmSakuBtn.disabled = false;
+            bgmStopBtn.disabled = false;
+            bgmRelaxBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            bgmSakuBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            bgmStopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            bgmRelaxBtn.textContent = 'リラックス';
+            bgmSakuBtn.textContent = 'サクサク';
+        }).catch(e => {
+            console.error("BGMの読み込みに失敗しました:", e);
+            bgmRelaxBtn.textContent = '読込失敗';
+            bgmSakuBtn.textContent = '読込失敗';
+        });
+
+        function playBGM(type) {
+             if (!bgmReady) { console.warn("BGM is not ready yet."); return; }
+             if (Tone.context.state !== 'running') { Tone.start(); }
+             if (type !== 'relax' && bgmRelax.state === 'started') bgmRelax.stop();
+             if (type !== 'saku' && bgmSaku.state === 'started') bgmSaku.stop();
+             if (type === 'relax' && bgmRelax.state !== 'started') bgmRelax.start();
+             if (type === 'saku' && bgmSaku.state !== 'started') bgmSaku.start();
+        }
+
+        function stopBGM() {
+            if (bgmRelax && bgmRelax.state === 'started') bgmRelax.stop();
+            if (bgmSaku && bgmSaku.state === 'started') bgmSaku.stop();
+        }
+
+        bgmRelaxBtn.addEventListener('click', () => playBGM('relax'));
+        bgmSakuBtn.addEventListener('click', () => playBGM('saku'));
+        bgmStopBtn.addEventListener('click', stopBGM);
+
+        // --- Game Flow ---
+        startButton.addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            currentStage = 1;
+            score = 0; // Reset score on new game
+            showStageIntro();
+        });
+
+        stageStartButton.addEventListener('click', () => {
+            stageIntro.classList.add('hidden');
+            startStage();
+        });
+
+        retryButton.addEventListener('click', () => {
+            resultScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            stopBGM();
+        });
+
+        // --- Stage Management ---
+        function showStageIntro() {
+            gameActive = false;
+            const config = stageConfig[currentStage];
+            stageTitle.textContent = config.title;
+            stageDescription.textContent = config.description;
+            gameScreen.className = `w-full max-w-lg mx-auto p-4 min-h-screen ${config.backgroundClass}`;
+            stageDisplay.textContent = currentStage;
+            const prevAvg = currentStage > 1 ? Math.round(score / (currentStage - 1)) : 0;
+            scoreDisplay.textContent = `${prevAvg}%`;
+            timerBar.style.width = '100%';
+            stageIntro.classList.remove('hidden');
+        }
+        
+        function startStage() {
+            gameActive = true;
+            beans = [];
+            totalTargets = 0;
+            clickedTargets = 0;
+            wrongClicks = 0;
+            
+            let spawnInterval = 500 - (currentStage * 50);
+
+            for (let i = 0; i < stageDuration / spawnInterval; i++) {
+                setTimeout(createBean, i * spawnInterval);
+            }
+
+            timerBar.style.transition = `width ${stageDuration / 1000}s linear`;
+            timerBar.style.width = '0%';
+
+            timer = setTimeout(endStage, stageDuration);
+            gameInterval = requestAnimationFrame(gameLoop);
+        }
+
+        function endStage() {
+            gameActive = false;
+            cancelAnimationFrame(gameInterval);
+            clearTimeout(timer);
+            
+            const potentialScore = totalTargets > 0 ? (clickedTargets / totalTargets) * 100 : 100;
+            const penalty = totalTargets > 0 ? (wrongClicks / totalTargets) * 50 : 0;
+            const finalStageScore = Math.max(0, Math.round(potentialScore - penalty));
+            
+            score += finalStageScore;
+
+            if (currentStage < totalStages) {
+                currentStage++;
+                playSound(sounds.stageClear);
+                setTimeout(showStageIntro, 1500);
+            } else {
+                showResult();
+            }
+        }
+
+        // --- Result Screen ---
+        function showResult() {
+            gameScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            
+            const finalAverageScore = Math.round(score / totalStages);
+            finalScoreDisplay.textContent = finalAverageScore;
+
+            let resultData;
+            if (finalAverageScore >= 90) {
+                resultData = { title: '素晴らしい！コーヒーマスター！', message: '完璧なハンドピックです！あなたは「Nanan Tokyo」の最高級スペシャルティコーヒーを味わう資格があります。', cupColor: '#FFD700', image: 'https://placehold.co/200x200/4A2C2A/FFFFFF?text=Nanan+Tokyo' };
+            } else if (finalAverageScore >= 80) {
+                resultData = { title: '美味しいコーヒー', message: '素晴らしい腕前！香り高く、風味豊かな美味しいコーヒーが淹れられました。', cupColor: '#C0FFEE', image: '' };
+            } else if (finalAverageScore >= 70) {
+                resultData = { title: '普通のコーヒー', message: 'まずまずの出来栄え。欠点豆が少し残っていますが、まあ飲めるコーヒーです。', cupColor: '#D2B48C', image: '' };
+            } else {
+                resultData = { title: '美味しくないコーヒー…', message: 'うーん、残念！欠点豆の味がする、ちょっと飲みにくいコーヒーになってしまいました。', cupColor: '#A9A9A9', image: '' };
+            }
+
+            resultTitle.textContent = resultData.title;
+            resultMessage.textContent = resultData.message;
+            resultCup.style.backgroundColor = resultData.cupColor;
+            if (resultData.image) {
+                resultImage.src = resultData.image;
+                resultImage.classList.remove('hidden');
+                resultCup.classList.add('hidden');
+            } else {
+                resultImage.classList.add('hidden');
+                resultCup.classList.remove('hidden');
+            }
+        }
+
+        // --- Game Loop & Drawing ---
+        function setupCanvas() {
+            const container = document.getElementById('game-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientWidth * 0.75;
+        }
+
+        function createBean() {
+            if (!gameActive) return;
+            const config = stageConfig[currentStage];
+            const beanKeys = Object.keys(config.beanTypes);
+            const randomKey = beanKeys[Math.floor(Math.random() * beanKeys.length)];
+            const beanInfo = config.beanTypes[randomKey];
+
+            const bean = {
+                x: Math.random() * (canvas.width - 30) + 15,
+                y: -20,
+                radius: canvas.width / 25,
+                color: beanInfo.color,
+                type: beanInfo.type,
+                speed: (Math.random() * 1 + 1) * (1 + currentStage * 0.1),
+                clicked: false
+            };
+            
+            beans.push(bean);
+            if (bean.type === config.targetType) { totalTargets++; }
+        }
+
+        function drawBean(bean) {
+            ctx.beginPath();
+            ctx.arc(bean.x, bean.y, bean.radius, 0, Math.PI * 2);
+            ctx.fillStyle = bean.color;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.stroke();
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = beans.length - 1; i >= 0; i--) {
+                const bean = beans[i];
+                bean.y += bean.speed;
+                if (bean.y > canvas.height + bean.radius) {
+                    beans.splice(i, 1);
+                    continue;
+                }
+                if(!bean.clicked) { drawBean(bean); }
+            }
+            
+            const currentPotentialScore = totalTargets > 0 ? (clickedTargets / totalTargets) * 100 : 0;
+            const currentPenalty = totalTargets > 0 ? (wrongClicks / totalTargets) * 50 : 0;
+            const currentDisplayScore = Math.max(0, Math.round(currentPotentialScore - currentPenalty));
+            scoreDisplay.textContent = `${currentDisplayScore}%`;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- User Input ---
+        function handleInteraction(event) {
+            if (!gameActive) return;
+            event.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const interactions = event.changedTouches ? event.changedTouches : [event];
+
+            for (const interaction of interactions) {
+                const x = (interaction.clientX - rect.left) * scaleX;
+                const y = (interaction.clientY - rect.top) * scaleY;
+
+                for (let i = beans.length - 1; i >= 0; i--) {
+                    const bean = beans[i];
+                    if (bean.clicked) continue;
+                    const distance = Math.sqrt((x - bean.x)**2 + (y - bean.y)**2);
+                    if (distance < bean.radius) {
+                        const config = stageConfig[currentStage];
+                        if (bean.type === config.targetType) { clickedTargets++; playSound(sounds.correct); } 
+                        else { wrongClicks++; playSound(sounds.wrong); }
+                        bean.clicked = true;
+                        beans.splice(i, 1);
+                        return; // Process one bean per click/tap
+                    }
+                }
+            }
+        }
+
+        // --- Initialization ---
+        window.addEventListener('resize', setupCanvas);
+        canvas.addEventListener('click', handleInteraction);
+        canvas.addEventListener('touchstart', handleInteraction);
+        setupCanvas();
+    </script>
+</body>
+</html>
