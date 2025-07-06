@@ -1,1 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美味しい音楽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Lato:wght@300;400&display=swap');
+        
+        :root {
+            --bg-color: #1a1a1a; /* 深いチャコール */
+            --text-color: #EAEAEA;
+            --primary-color: #D4AF37; /* ゴールド */
+            --card-bg: #2C2C2C;
+            --card-hover-bg: #383838;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+        }
 
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .header-title {
+            font-family: 'Cormorant Garamond', serif;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .header-subtitle {
+            font-weight: 300;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+
+        .playlist-card {
+            background-color: var(--card-bg);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 20px var(--shadow-color);
+            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1), box-shadow 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            cursor: pointer;
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .playlist-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.1), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .playlist-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 30px var(--shadow-color);
+        }
+        .playlist-card:hover::before {
+            opacity: 1;
+        }
+
+        .playlist-card.active {
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.5);
+            border-color: var(--primary-color);
+        }
+        .playlist-card.active::before {
+             opacity: 1;
+        }
+
+        .playlist-card svg {
+            width: 40%;
+            height: auto;
+            color: var(--text-color);
+            opacity: 0.7;
+            transition: color 0.3s ease, opacity 0.3s ease;
+        }
+        .playlist-card:hover svg, .playlist-card.active svg {
+            color: var(--primary-color);
+            opacity: 1;
+        }
+        .card-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        #waveform {
+            width: 100%;
+            height: 150px;
+            display: block;
+        }
+        
+        #player-info {
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
+
+    <div class="w-full max-w-4xl mx-auto">
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="header-title text-4xl md:text-5xl">Delicious Music</h1>
+            <p class="header-subtitle mt-3 text-lg">A curated playlist for your fine moments.</p>
+        </header>
+
+        <main>
+            <!-- 波形表示コンテナ -->
+            <div class="mb-8 rounded-lg bg-black/30 shadow-inner p-2">
+                <canvas id="waveform"></canvas>
+            </div>
+
+            <!-- プレイリスト選択ボタン -->
+            <div id="playlist-controls" class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                <!-- Playlist 1: サブレ -->
+                <div class="playlist-card flex flex-col items-center justify-center p-6" data-track="0">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="1"></rect><path d="M12 10v4"></path><path d="M10 12h4"></path></svg>
+                    <h2 class="card-title mt-4">Sablé</h2>
+                </div>
+                <!-- Playlist 2: どら焼き -->
+                <div class="playlist-card flex flex-col items-center justify-center p-6" data-track="1">
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 4.24 2 7s4.5 5 10 5 10-2.24 10-5S17.5 2 12 2z"></path><path d="M2 17s4.5-5 10-5 10 5 10 5"></path><path d="M2 12s4.5-5 10-5 10 5 10 5"></path></svg>
+                    <h2 class="card-title mt-4">Dorayaki</h2>
+                </div>
+                <!-- Playlist 3: ダックワーズ -->
+                <div class="playlist-card flex flex-col items-center justify-center p-6" data-track="2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.84c-1.29-1.29-4.29-4.29-4.29-7.34 0-2.24 1.81-4.05 4.05-4.05 1.24 0 2.37.56 3.07 1.45l1.22-1.22L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <h2 class="card-title mt-4">Dacquoise</h2>
+                </div>
+                <!-- Playlist 4: コーヒー -->
+                <div class="playlist-card flex flex-col items-center justify-center p-6" data-track="3">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6H8a6 6 0 0 1-6-6V9a6 6 0 0 1 6-6z"></path><path d="M18 9h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"></path><path d="M12 8v8"></path></svg>
+                    <h2 class="card-title mt-4">Le Café</h2>
+                </div>
+            </div>
+
+            <!-- 再生情報と停止ボタン -->
+            <div id="player-info" class="mt-8 text-center h-16 flex flex-col items-center justify-center opacity-0">
+                <p id="now-playing" class="text-gray-400 font-light tracking-widest"></p>
+                <button id="stop-button" class="mt-4 text-gray-400 hover:text-white border border-gray-600 hover:border-white font-semibold py-2 px-6 rounded-full text-xs tracking-widest transition-all">STOP</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const waveformCanvas = document.getElementById('waveform');
+            const waveformCtx = waveformCanvas.getContext('2d');
+            const playlistControls = document.getElementById('playlist-controls');
+            const playerInfo = document.getElementById('player-info');
+            const nowPlayingDisplay = document.getElementById('now-playing');
+            const stopButton = document.getElementById('stop-button');
+
+            const playlists = [
+                { title: "Sablé", url: "https://cdn.pixabay.com/audio/2023/10/11/audio_a7dc882998.mp3" },
+                { title: "Dorayaki", url: "https://cdn.pixabay.com/audio/2022/08/02/audio_823b551328.mp3" },
+                { title: "Dacquoise", url: "https://cdn.pixabay.com/audio/2022/01/24/audio_316804a883.mp3" },
+                { title: "Le Café", url: "https://cdn.pixabay.com/audio/2022/05/23/audio_b8558f3c46.mp3" }
+            ];
+
+            let players = [];
+            let waveform;
+            let currentTrackIndex = -1;
+            let audioReady = false;
+
+            function setupAudio() {
+                waveform = new Tone.Waveform();
+                Tone.Destination.connect(waveform);
+                players = playlists.map(track => new Tone.Player({ url: track.url, loop: true, fadeOut: 0.5 }).toDestination());
+                Tone.loaded().then(() => { audioReady = true; }).catch(e => { console.error("音楽の読み込みに失敗:", e); });
+            }
+
+            function playTrack(index) {
+                if (!audioReady || index === currentTrackIndex) return;
+                if (Tone.context.state !== 'running') Tone.start();
+                if (currentTrackIndex !== -1) players[currentTrackIndex].stop();
+                currentTrackIndex = index;
+                players[currentTrackIndex].start();
+                updateUI(playlists[currentTrackIndex].title);
+            }
+
+            function stopAllMusic() {
+                if (currentTrackIndex !== -1) {
+                    players[currentTrackIndex].stop();
+                    currentTrackIndex = -1;
+                    updateUI(null);
+                }
+            }
+            
+            function updateUI(playingTitle) {
+                document.querySelectorAll('.playlist-card').forEach((card, i) => card.classList.toggle('active', i === currentTrackIndex));
+                if (playingTitle) {
+                    nowPlayingDisplay.textContent = `NOW PLAYING: ${playingTitle}`;
+                    playerInfo.classList.remove('opacity-0');
+                } else {
+                    playerInfo.classList.add('opacity-0');
+                }
+            }
+
+            function drawWaveform() {
+                requestAnimationFrame(drawWaveform);
+                if (!waveform) return;
+
+                const width = waveformCanvas.width;
+                const height = waveformCanvas.height;
+                waveformCtx.clearRect(0, 0, width, height);
+                
+                if (currentTrackIndex === -1) return;
+
+                const values = waveform.getValue();
+                const gradient = waveformCtx.createLinearGradient(0, 0, width, 0);
+                gradient.addColorStop(0, 'rgba(212, 175, 55, 0)');
+                gradient.addColorStop(0.2, 'rgba(212, 175, 55, 0.7)');
+                gradient.addColorStop(0.8, 'rgba(212, 175, 55, 0.7)');
+                gradient.addColorStop(1, 'rgba(212, 175, 55, 0)');
+                waveformCtx.fillStyle = gradient;
+                
+                waveformCtx.beginPath();
+                waveformCtx.moveTo(0, height / 2);
+                for (let i = 0; i < values.length; i++) {
+                    const x = (i / values.length) * width;
+                    const y = (values[i] * height / 2) + (height / 2);
+                    waveformCtx.lineTo(x, y);
+                }
+                waveformCtx.lineTo(width, height / 2);
+                waveformCtx.closePath();
+                waveformCtx.fill();
+            }
+
+            playlistControls.addEventListener('click', (e) => {
+                const card = e.target.closest('.playlist-card');
+                if (card) playTrack(parseInt(card.dataset.track, 10));
+            });
+            stopButton.addEventListener('click', stopAllMusic);
+
+            function init() {
+                const container = waveformCanvas.parentElement;
+                waveformCanvas.width = container.clientWidth;
+                waveformCanvas.height = 150;
+                setupAudio();
+                drawWaveform();
+            }
+            init();
+        });
+    </script>
+</body>
+</html>
