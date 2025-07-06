@@ -99,7 +99,7 @@
 
         const masterBeatmaps = {
             sakusaku: [
-                 { time: 2.762, lane: 1, type: 2 },
+                { time: 2.762, lane: 1, type: 2 },
     { time: 3.264, lane: 2, type: 1 },
     { time: 3.72, lane: 4, type: 0 },
     { time: 4.27, lane: 4, type: 1 },
@@ -144,7 +144,7 @@
     { time: 35.495, lane: 1, type: 2 },
             ],
             mochimochi: [
-               { time: 1.16, lane: 3, type: 2 },
+                { time: 1.16, lane: 3, type: 2 },
     { time: 1.608, lane: 4, type: 2 },
     { time: 2.823, lane: 1, type: 0 },
     { time: 3.299, lane: 0, type: 0 },
@@ -261,6 +261,17 @@
             `;
             showView(view);
         }
+
+        function showStageSelect() {
+            const view = `
+                <p>ステージを選んでください</p>
+                <button class="ui-button" data-action="select-stage" data-difficulty="EASY">EASY (STAGE 1)</button>
+                <button class="ui-button" data-action="select-stage" data-difficulty="NORMAL">NORMAL (STAGE 2)</button>
+                <button class="ui-button" data-action="select-stage" data-difficulty="HARD">HARD (STAGE 3)</button>
+                <button class="ui-button" data-action="back-to-song-select">曲選択に戻る</button>
+            `;
+            showView(view);
+        }
         
         function showStyleSelect() {
             const view = `
@@ -268,7 +279,7 @@
                 <button class="ui-button" data-action="select-style" data-style="left">左手でプレイ</button>
                 <button class="ui-button" data-action="select-style" data-style="right">右手でプレイ</button>
                 <button class="ui-button" data-action="select-style" data-style="tap">タップでプレイ</button>
-                <button class="ui-button" data-action="back-to-song-select">曲選択に戻る</button>
+                <button class="ui-button" data-action="back-to-stage-select">ステージ選択に戻る</button>
             `;
             showView(view);
         }
@@ -276,7 +287,7 @@
         function attachButtonListeners() {
             document.querySelectorAll('[data-action]').forEach(button => {
                 button.onclick = (e) => {
-                    const { action, song, style } = e.target.dataset;
+                    const { action, song, difficulty, style } = e.target.dataset;
                     switch (action) {
                         case 'select-song':
                             currentSong = song;
@@ -290,6 +301,7 @@
                             showStyleSelect();
                             break;
                         case 'back-to-song-select': showSongSelect(); break;
+                        case 'back-to-stage-select': showStageSelect(); break;
                     }
                 };
             });
@@ -318,6 +330,13 @@
             isGameRunning = true;
             uiLayer.classList.add('hidden');
             beatmap.forEach(createNote);
+            
+            // ★★★ 修正点: 曲の終了をイベントで検知 ★★★
+            audio.onended = () => {
+                // 遅延を設けて、最後のノーツが消えるのを待つ
+                setTimeout(finishStage, 500);
+            };
+
             audio.currentTime = 0;
             audio.play();
             gameLoop();
@@ -343,27 +362,25 @@
             });
             notes = notes.filter(note => !note.isHit || note.y <= canvas.height);
             particles.forEach((p, i) => { p.update(); p.draw(); if (p.alpha <= 0) particles.splice(i, 1); });
-            if (!audio.paused && audio.ended) {
-                finishStage();
-            } else {
-                requestAnimationFrame(gameLoop);
-            }
+            
+            // ループを継続
+            requestAnimationFrame(gameLoop);
         }
         
         function finishStage() {
             isGameRunning = false;
-            const clearThreshold = beatmap.length * 300 * 0.7; // クリア条件を少し緩和
+            const clearThreshold = beatmap.length * 300 * 0.7; 
             const isClear = score >= clearThreshold;
 
             if (isClear) {
-                if (currentStage < 2) { // まだ次のステージがある場合
+                if (currentStage < 2) {
                     currentStage++;
                     showView(`<div><p>STAGE CLEAR!</p><p>次のステージに進みます...</p></div>`);
-                    setTimeout(prepareGame, 2500); // 2.5秒後に次のステージへ
-                } else { // 全ステージクリア
+                    setTimeout(prepareGame, 2500);
+                } else {
                     showEndScreen(true);
                 }
-            } else { // ステージ失敗
+            } else {
                 showEndScreen(false);
             }
         }
