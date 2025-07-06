@@ -3,28 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OKOME Game Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <title>UKUMe Portal</title>
     <style>
-        body { font-family: 'Noto Serif JP', serif; background-color: #f5f2ed; color: #5D4037; margin: 0; padding: 20px; }
-        .header { text-align: center; margin-bottom: 40px; }
-        .header h1 { font-family: 'Orbitron', sans-serif; font-size: 2.5em; margin: 0; }
-        .game-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; max-width: 1000px; margin: 0 auto; }
-        .game-card { background-color: #fff; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; text-decoration: none; color: inherit; display: flex; flex-direction: column; }
-        .game-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.15); }
-        .game-card img { width: 100%; height: 180px; object-fit: cover; border-bottom: 1px solid #eee; }
-        .game-card-content { padding: 20px; flex-grow: 1; }
-        .game-card h2 { margin-top: 0; font-size: 1.5em; }
-        .game-card p { font-size: 0.9em; line-height: 1.6; }
-        .play-button { display: block; background-color: #8b7969; color: white; text-align: center; padding: 15px; font-size: 1.1em; font-weight: bold; text-decoration: none; transition: background-color 0.3s; }
-        .play-button:hover { background-color: #6d5f52; }
+        body { 
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f0f2f5; 
+            color: #333; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+        }
+        h1 { 
+            color: #5a4a42; 
+            font-size: 2.5em;
+        }
+        p {
+            color: #666;
+        }
+        .game-gallery { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 25px; 
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .game-card { 
+            background-color: #fff; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+            text-decoration: none; 
+            color: inherit; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+        }
+        .game-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+        .game-card img { 
+            width: 100%; 
+            height: 200px; 
+            object-fit: cover; 
+            border-bottom: 1px solid #eee;
+        }
+        .game-card-content { 
+            padding: 20px; 
+            flex-grow: 1; 
+        }
+        .game-card h2 { 
+            margin-top: 0; 
+            color: #333;
+        }
+        .play-button { 
+            background: linear-gradient(45deg, #e44d26, #f16529);
+            color: white; 
+            text-align: center; 
+            padding: 12px; 
+            font-weight: bold; 
+            margin-top: auto;
+        }
     </style>
 </head>
 <body>
-    <header class="header">
-        <h1>OKOME Game Portal</h1>
+    <header>
+        <h1>UKUMe Game Portal</h1>
         <p>C'est du nananのミニゲームの世界へようこそ</p>
     </header>
+
     <main class="game-gallery">
         <a href="./games/sable-invaders/" class="game-card">
             <img src="https://placehold.co/600x400/8b7969/FFFFFF?text=Sable+Invaders" alt="サブレ・インベーダーズのゲーム画面">
@@ -34,8 +84,9 @@
             </div>
             <div class="play-button">PLAY NOW</div>
         </a>
-        <!-- 新しいゲームはここに追加 -->
-                <!-- ゲーム3: サブレ・ビート・プロ -->
+
+        
+          <!-- サブレ・ビート・プロ -->
         <a href="./games/sable-beat-pro/" class="game-card">
             <img src="https://placehold.co/600x400/2c3e50/FFFFFF?text=Sable+Beat+Pro" alt="サブレ・ビート・プロのゲーム画面">
             <div class="game-card-content">
@@ -44,7 +95,8 @@
             </div>
             <div class="play-button">PLAY NOW</div>
         </a>
-
+        
+        <!-- ハンドピックゲーム -->
         <a href="./games/procoffee-game/index.html" class="game-card">
             <img src="https://placehold.co/600x400/A0522D/FFFFFF?text=Handpick+Game" alt="ハンドピックゲームのゲーム画面">
             <div class="game-card-content">
@@ -53,8 +105,8 @@
             </div>
             <div class="play-button">PLAY NOW</div>
         </a>
-    
 
+      
     </main>
 </body>
 </html>
