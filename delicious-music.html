@@ -160,15 +160,17 @@
             const nowPlayingDisplay = document.getElementById('now-playing');
             const stopButton = document.getElementById('stop-button');
 
-            const playlists =  // --- 音楽ファイルの設定 ---
+            // --- 音楽ファイルの設定 ---
             // ▼▼▼▼▼ GitHub上のMP3ファイルを参照 ▼▼▼▼▼
             const playlists = [
-                { title: "Sablé", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/sablé.mp3" },
+                // (修正) URL内のファイル名 'sablé.mp3' に特殊文字が含まれていたため、'sable.mp3' に修正しました。
+                { title: "Sablé", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/sable.mp3" },
                 { title: "Dorayaki", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/dorayaki.mp3" },
                 { title: "Dacquoise", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/dacquoise.mp3" },
                 { title: "Le Café", url: "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/music/coffee.mp3" }
             ];
             // ▲▲▲▲▲ ここまで ▲▲▲▲▲
+            
             let players = [];
             let waveform;
             let currentTrackIndex = -1;
