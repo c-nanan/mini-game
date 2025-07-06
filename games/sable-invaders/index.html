@@ -87,6 +87,14 @@
             pointer-events: auto;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
+        /* ★★★ 追加: ゲームオーバー画面のボタンスタイル ★★★ */
+        .game-over-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
         #combo-display {
             position: absolute;
             bottom: 70px;
@@ -238,11 +246,25 @@
             requestAnimationFrame(gameLoop);
         }
 
+        // ★★★ 変更点: ゲームオーバー処理を更新 ★★★
         function gameOver() {
             isGameOver = true;
-            uiLayer.innerHTML = `<div><p>GAME OVER</p><p>SCORE: ${score}</p><button id="restartButton">もう一度プレイ</button></div>`;
+            uiLayer.innerHTML = `
+                <div>
+                    <p>GAME OVER</p>
+                    <p>SCORE: ${score}</p>
+                    <div class="game-over-buttons">
+                        <button id="restartButton">もう一度プレイ</button>
+                        <button id="portalButton">ポータルに戻る</button>
+                    </div>
+                </div>`;
             uiLayer.classList.remove('hidden');
+            
             document.getElementById('restartButton').addEventListener('click', startGame);
+            document.getElementById('portalButton').addEventListener('click', () => {
+                // ポータルページ（2階層上）に戻る
+                window.location.href = '../../';
+            });
         }
 
         function nextWave() {
