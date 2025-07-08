@@ -1,0 +1,213 @@
+/* Google Fontsの読み込み */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Lato:wght@300;400&display=swap');
+
+/* --- 基本スタイル --- */
+body {
+    font-family: 'Lato', sans-serif;
+    background: linear-gradient(120deg, #181818 0%, #28231c 100%);
+    color: #EAEAEA;
+    min-height: 100vh;
+}
+
+/* --- ヘッダー --- */
+.header-title {
+    font-family: 'Cormorant Garamond', serif;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: #D4AF37;
+    text-shadow: 0 2px 8px #201700cc;
+    font-size: 2.6rem;
+}
+
+.header-subtitle {
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    color: #e0cfa0;
+    opacity: 0.95;
+    letter-spacing: 0.06em;
+    margin-top: 0.5rem;
+}
+
+/* --- プレイリストカード --- */
+.playlist-card {
+    background: radial-gradient(circle at 60% 40%, #2c2c2c 80%, #3e2e13 120%);
+    border-radius: 1rem;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.5);
+    cursor: pointer;
+    position: relative;
+    padding: 2.2rem 1.2rem;
+    text-align: center;
+    transition: 
+        transform 0.35s cubic-bezier(0.22,1,0.36,1),
+        box-shadow 0.45s cubic-bezier(0.19, 1, 0.22, 1),
+        border-color 0.3s,
+        background 0.6s;
+    border: 2px solid transparent;
+    margin-bottom: 0.5rem;
+}
+
+.playlist-card:not(.disabled):hover,
+.playlist-card:not(.disabled):focus {
+    transform: translateY(-6px) scale(1.025);
+    box-shadow: 0 24px 60px #d4af3720, 0 2px 12px #fffbe6aa;
+    outline: none;
+    border-color: #D4AF37;
+    background: radial-gradient(circle at 40% 50%, #39332a 60%, #614f1a 140%);
+}
+
+.playlist-card.active {
+    border-color: #D4AF37;
+    animation: glow 1.3s ease-in-out infinite alternate;
+    box-shadow: 0 0 32px #d4af37cc, 0 2px 16px #ffe8b022;
+}
+
+@keyframes glow {
+    0% { box-shadow: 0 0 12px #d4af3733; }
+    100% { box-shadow: 0 0 38px #d4af37cc; }
+}
+
+.playlist-card.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: grayscale(70%);
+    border-color: #8882;
+}
+
+/* --- カード内バッジ --- */
+.status-badge {
+    display: none;
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: #D4AF37;
+    color: #201700;
+    font-size: 0.72rem;
+    font-weight: bold;
+    padding: 0.22rem 0.75rem;
+    border-radius: 0.4rem;
+    box-shadow: 0 0 4px #d4af3733;
+    letter-spacing: 0.06em;
+    z-index: 2;
+}
+
+.playlist-card.disabled .coming-soon {
+    display: block;
+}
+
+.playlist-card .loading { background: #fffbe6; color: #a78627; }
+.playlist-card .error { background: #7a3200; color: #fffde4; }
+
+/* --- カード内アイコン --- */
+.card-icon-container {
+    height: 55px;
+    margin-bottom: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-icon-container svg {
+    width: 48px;
+    height: 48px;
+    stroke: #e8e3b7;
+    stroke-width: 1.4;
+    fill: none;
+    transition: stroke 0.3s, filter 0.3s;
+    filter: drop-shadow(0 0 9px #d4af3722);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.playlist-card:not(.disabled):hover .card-icon-container svg,
+.playlist-card:not(.disabled):focus .card-icon-container svg,
+.playlist-card.active .card-icon-container svg {
+    stroke: #D4AF37;
+    filter: drop-shadow(0 0 18px #d4af3760);
+}
+
+.card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.22rem;
+    margin-top: 0.2rem;
+    letter-spacing: 0.06em;
+    color: #F3EEC6;
+}
+
+/* --- 波形 & プレイヤー --- */
+#waveform { 
+    width: 100%; 
+    height: 150px; 
+    background: linear-gradient(90deg, #111 60%, #1a130a 100%);
+    border-radius: 0.3rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 6px 22px #000a;
+}
+
+#player-info { 
+    transition: opacity 0.5s; 
+    min-height: 86px;
+}
+
+#now-playing {
+    color: #ffefa5;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.14rem;
+    letter-spacing: 0.08em;
+    text-shadow: 0 1px 10px #d4af3720;
+}
+
+/* --- シークバー --- */
+#seek-bar { 
+    width: 100%; 
+    margin-top: 1.3rem;
+    accent-color: #d4af37;
+    height: 4px;
+    background: linear-gradient(90deg, #ffe084 0%, #d4af37 100%);
+    border-radius: 12px;
+}
+
+#seek-bar:disabled { 
+    opacity: 0.6; 
+    filter: grayscale(40%);
+}
+
+#seek-bar::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px; height: 18px;
+    background: linear-gradient(145deg, #fffbe6 40%, #d4af37 100%);
+    border: 2.5px solid #d4af37;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(212,175,55,0.25);
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#seek-bar::-moz-range-thumb {
+    width: 18px; height: 18px;
+    background: linear-gradient(145deg, #fffbe6 40%, #d4af37 100%);
+    border: 2.5px solid #d4af37;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(212,175,55,0.25);
+    cursor: pointer;
+}
+
+#seek-bar:focus { 
+    outline: none; 
+}
+
+/* --- その他 --- */
+::-webkit-scrollbar { 
+    width: 10px; 
+    background: #29220d;
+}
+::-webkit-scrollbar-thumb { 
+    background: #d4af37; 
+    border-radius: 8px;
+}
+
+/* --- レスポンシブ対応 --- */
+@media (max-width: 900px) {
+    .playlist-card { 
+        padding: 1.6rem 0.7rem; 
+    }
+}
