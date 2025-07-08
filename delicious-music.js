@@ -142,15 +142,25 @@ document.addEventListener('DOMContentLoaded', () => {
         waveformCtx.stroke();
     }
 
-    // --- UI更新 ---
-    function updateSeekBar() {
-        const player = players[currentTrackIndex];
-        if (player && player.loaded && player.state === 'started' && !isSeeking) {
-            if (player.progress !== undefined) {
-                seekBar.value = player.progress * 100;
-            }
+  // --- UI更新 ---
+function updateSeekBar() {
+    const player = players[currentTrackIndex];
+
+    // プレイヤーが存在し、読み込み完了、再生中、かつユーザーがシークバーを操作していないかを確認します
+    if (player && player.loaded && player.state === 'started' && !isSeeking) {
+        
+        // player.position はTone.jsの現在の再生位置（秒）を正確に取得します
+        // player.buffer.duration は読み込んだ音声ファイルの総時間（秒）です
+        const progress = (player.position / player.buffer.duration) * 100;
+        
+        // 計算した進捗率をシークバーの value に設定します
+        // isFiniteで、計算結果が有効な数値か念のため確認します
+        if (isFinite(progress)) {
+            seekBar.value = progress;
         }
     }
+}
+
     
     function updateCardStatus(index, status) {
         document.querySelectorAll('.playlist-card').forEach((c, i) => {
