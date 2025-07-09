@@ -164,7 +164,6 @@
             context.beginPath();
             context.ellipse(x, y, radius, radius * 0.9, 0, 0, 2 * Math.PI);
             context.fill();
-            // Stem
             context.fillStyle = stemColor;
             context.beginPath();
             context.arc(x, y - radius * 0.7, radius * 0.2, 0, 2 * Math.PI);
@@ -176,7 +175,6 @@
             context.beginPath();
             context.ellipse(x, y, radius * 0.7, radius, 0, 0, 2 * Math.PI);
             context.fill();
-            // Center line
             context.strokeStyle = 'rgba(0,0,0,0.2)';
             context.lineWidth = 1;
             context.beginPath();
@@ -196,7 +194,6 @@
             context.beginPath();
             context.ellipse(x, y, radius * 0.75, radius, Math.PI / 8, 0, 2 * Math.PI);
             context.fill();
-            // Center line
             context.strokeStyle = 'rgba(0,0,0,0.3)';
             context.lineWidth = 1.5;
             context.beginPath();
@@ -226,8 +223,8 @@
                 sampleTitle: 'タップするお手本',
                 beanTypes: {
                     good: { type: 'good', draw: (ctx, x, y, r) => drawGreenBean(ctx, x, y, r, '#A8D8B0') },
-                    bad1: { type: 'bad', draw: (ctx, x, y, r) => drawGreenBean(ctx, x, y, r, '#5A5A5A') }, // Black bean
-                    bad2: { type: 'bad', draw: (ctx, x, y, r) => drawGreenBean(ctx, x, y, r, '#785E2F', true) }, // Insect
+                    bad1: { type: 'bad', draw: (ctx, x, y, r) => drawGreenBean(ctx, x, y, r, '#5A5A5A') },
+                    bad2: { type: 'bad', draw: (ctx, x, y, r) => drawGreenBean(ctx, x, y, r, '#785E2F', true) },
                 }
             },
             3: {
@@ -238,35 +235,51 @@
                 sampleTitle: 'タップするお手本',
                 beanTypes: {
                     good: { type: 'good', draw: (ctx, x, y, r) => drawRoastedBean(ctx, x, y, r, '#6F4E37') },
-                    bad1: { type: 'bad', draw: (ctx, x, y, r) => drawRoastedBean(ctx, x, y, r, '#D2B48C') }, // Under-roasted
-                    bad2: { type: 'bad', draw: (ctx, x, y, r) => drawRoastedBean(ctx, x, y, r, '#3B2F2F') }, // Over-roasted
+                    bad1: { type: 'bad', draw: (ctx, x, y, r) => drawRoastedBean(ctx, x, y, r, '#D2B48C') },
+                    bad2: { type: 'bad', draw: (ctx, x, y, r) => drawRoastedBean(ctx, x, y, r, '#3B2F2F') },
                 }
             }
         };
 
-        // --- Audio Settings (BGM Only) ---
-        const relaxMusicURL = "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/games/procoffee-game/mochimochi.mp3"; 
-        const sakuSakuMusicURL = "https://cdn.jsdelivr.net/gh/c-nanan/mini-game/games/procoffee-game/sakusaku.mp3";
+        // ★★★ ここからが音楽読み込みの重要な修正点 ★★★
+
+        // 相対パスで、このHTMLファイルと同じフォルダにある音楽ファイルを指定します
+        const relaxMusicURL = "./mochimochi.mp3"; 
+        const sakuSakuMusicURL = "./sakusaku.mp3";
 
         let bgmRelax, bgmSaku;
         let bgmReady = false;
 
-        bgmRelax = new Tone.Player({ url: relaxMusicURL, loop: true, fadeOut: 0.5 }).toDestination();
-        bgmSaku = new Tone.Player({ url: sakuSakuMusicURL, loop: true, fadeOut: 0.5 }).toDestination();
-        
-        Tone.loaded().then(() => {
-            bgmReady = true;
-            console.log("BGMの読み込みが完了しました。");
-            [bgmRelaxBtn, bgmSakuBtn, bgmStopBtn].forEach(btn => {
-                btn.disabled = false;
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            });
-            bgmRelaxBtn.textContent = 'リラックス';
-            bgmSakuBtn.textContent = 'サクサク';
-        }).catch(e => {
-            console.error("BGMの読み込みに失敗しました:", e);
-            [bgmRelaxBtn, bgmSakuBtn].forEach(btn => btn.textContent = '読込失敗');
-        });
+        // Tone.Playerの作成と読み込みを非同期で行う
+        async function loadAudio() {
+            try {
+                bgmRelax = new Tone.Player({ loop: true, fadeOut: 0.5 }).toDestination();
+                bgmSaku = new Tone.Player({ loop: true, fadeOut: 0.5 }).toDestination();
+                
+                // Promise.all を使って、両方のファイルの読み込み完了を待つ
+                await Promise.all([
+                    bgmRelax.load(relaxMusicURL),
+                    bgmSaku.load(sakuSakuMusicURL)
+                ]);
+
+                // 読み込みが成功した場合の処理
+                bgmReady = true;
+                console.log("BGMの読み込みが完了しました。");
+                [bgmRelaxBtn, bgmSakuBtn, bgmStopBtn].forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                });
+                bgmRelaxBtn.textContent = 'リラックス';
+                bgmSakuBtn.textContent = 'サクサク';
+
+            } catch (e) {
+                // 読み込みが失敗した場合の処理
+                console.error("BGMの読み込みに失敗しました:", e);
+                [bgmRelaxBtn, bgmSakuBtn].forEach(btn => btn.textContent = '読込失敗');
+            }
+        }
+
+        // ★★★ ここまでが音楽読み込みの重要な修正点 ★★★
 
         function playBGM(type) {
              if (!bgmReady) return;
@@ -329,7 +342,6 @@
             const config = stageConfig[currentStage];
             stageTitle.textContent = config.title;
             stageDescription.textContent = config.description;
-            // This class is on the parent now, not the game-screen
             document.body.className = `bg-gray-100 flex items-center justify-center min-h-screen ${config.backgroundClass}`;
             stageDisplay.textContent = currentStage;
             const prevAvg = currentStage > 1 ? Math.round(score / (currentStage - 1)) : 0;
@@ -365,7 +377,7 @@
             clearTimeout(timer);
             
             const potentialScore = totalTargets > 0 ? (clickedTargets / totalTargets) * 100 : 100;
-            const penalty = totalTargets > 0 ? (wrongClicks / (beans.length + clickedTargets)) * 50 : 0; // Penalty based on total beans
+            const penalty = totalTargets > 0 ? (wrongClicks / (beans.length + clickedTargets)) * 50 : 0;
             const finalStageScore = Math.max(0, Math.round(potentialScore - penalty));
             
             score += finalStageScore;
@@ -415,7 +427,7 @@
         function setupCanvas() {
             const container = document.getElementById('game-container');
             canvas.width = container.clientWidth;
-            canvas.height = container.clientWidth * 1.25; // Make canvas taller
+            canvas.height = container.clientWidth * 1.25;
         }
 
         function createBean() {
@@ -498,6 +510,7 @@
         canvas.addEventListener('click', handleInteraction);
         canvas.addEventListener('touchstart', handleInteraction);
         setupCanvas();
+        loadAudio(); // ★修正点: ページの読み込み時に音声読み込みを開始
     </script>
 </body>
 </html>
