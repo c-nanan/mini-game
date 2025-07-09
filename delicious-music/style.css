@@ -1,11 +1,30 @@
-/* --- 基本設定と変数 --- */
+/*
+================================================================
+タイポグラフィ（文字）設定エリア
+今後、文字のフォントやサイズを変更したい場合は、主にこのエリアを編集してください。
+================================================================
+*/
 :root {
+    /* --- 色の定義 --- */
     --glow-color: #D4AF37;
     --glow-color-transparent: rgba(212, 175, 55, 0.7);
+
+    /* --- フォントファミリーの定義 --- */
+    --font-elegant: 'Cormorant Garamond', serif; /* 優雅なセリフ体 */
+    --font-modern: 'Inter', 'Noto Sans JP', sans-serif; /* モダンなゴシック体 */
+
+    /* --- フォントサイズの定義 --- */
+    /* clamp(最小サイズ, 推奨サイズ, 最大サイズ) を使うことで、画面幅に応じて滑らかに変化します */
+    --font-size-h1: clamp(4rem, 20vw, 7rem);  /* ★メインタイトル (Delicious Music) のサイズ */
+    --font-size-subtitle: clamp(0.9rem, 1.5vw, 1rem);  /* ★サブタイトルのサイズ */
+    --font-size-now-playing: 1.5rem;                  /* 再生中タイトルのサイズ */
+    --font-size-card-title: 0.9rem;                   /* ★カードの文字サイズ */
 }
 
+/* ============================================================== */
+
 body { 
-    font-family: 'Inter', 'Noto Sans JP', sans-serif;
+    font-family: var(--font-modern); /* モダンなフォントを基本に設定 */
     background-color: #0a0a0a;
     color: #e0e0e0;
     margin: 0; 
@@ -18,7 +37,7 @@ body {
 }
 
 a {
-    text-decoration: none; /* リンクの下線を全体で無効化 */
+    text-decoration: none;
     color: inherit;
 }
 
@@ -49,12 +68,13 @@ header {
     margin-bottom: 40px; 
 }
 
+/* ★修正点: 上で定義した変数を使ってスタイルを指定 */
 h1 { 
-    font-family: 'Cormorant Garamond', serif;
+    font-family: var(--font-elegant);
+    font-size: var(--font-size-h1);
     color: #fff;
-    font-size: clamp(2.5em, 8vw, 4em);
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     text-shadow: 0 0 7px #fff, 0 0 12px var(--glow-color), 0 0 25px var(--glow-color), 0 0 40px var(--glow-color-transparent);
     margin: 0;
     animation: pulse 5s infinite alternate;
@@ -65,11 +85,14 @@ h1 {
     to { text-shadow: 0 0 7px #fff, 0 0 20px var(--glow-color), 0 0 45px var(--glow-color); }
 }
 
+/* ★修正点: 上で定義した変数を使ってスタイルを指定 */
 header p {
+    font-family: var(--font-modern);
+    font-size: var(--font-size-subtitle);
     color: #a0a0a0;
-    font-size: 1.1em;
     letter-spacing: 1px;
-    margin-top: 0.5em;
+    margin-top: 0.2em;
+    opacity: 0.8;
 }
 
 /* --- 波形 --- */
@@ -79,64 +102,70 @@ header p {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     backdrop-filter: blur(5px);
 }
 
-/* --- ここから下がプレイヤー情報の重要な修正点 --- */
-
-/* プレイヤー情報エリア全体 */
+/* --- プレイヤー情報エリア --- */
 #player-info {
-    transition: opacity 0.5s ease;
-    padding: 25px 20px; /* パディングを調整 */
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    margin-bottom: 40px;
-    backdrop-filter: blur(5px);
-    
-    /* ★修正点1: Flexboxを使って中身を確実に中央揃えにします */
+    visibility: hidden;
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+    transition: all 0.5s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-/* 曲名 */
+#player-info.visible {
+    visibility: visible;
+    opacity: 1;
+    max-height: 300px;
+    padding-top: 25px;
+    padding-bottom: 25px;
+    margin-bottom: 40px;
+}
+
+/* ★修正点: 上で定義した変数を使ってスタイルを指定 */
 #now-playing {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.5em; /* 少し大きく */
+    font-family: var(--font-elegant);
+    font-size: var(--font-size-now-playing);
     color: var(--glow-color);
     margin: 0 0 20px 0;
+    min-height: 1.5em;
 }
 
 /* シークバー */
 #seek-bar {
-    width: 90%; /* 幅をコンテナより少し狭く */
-    max-width: 500px; /* PCでの最大幅を設定 */
+    width: 90%;
+    max-width: 500px;
     accent-color: var(--glow-color);
-    margin-bottom: 25px; /* ボタンとの間隔を確保 */
+    margin-bottom: 25px;
 }
 
-/* ★修正点2: STOPボタンのデザインを全面的に刷新 */
+/* STOPボタン */
 #stop-button {
     background: transparent;
-    border: 1px solid rgba(212, 175, 55, 0.5); /* ゴールドの細い枠線 */
-    color: var(--glow-color); /* ゴールドの文字色 */
-    padding: 12px 40px; /* 内側の余白を調整 */
-    border-radius: 50px; /* 角を丸くしてカプセル型に */
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    color: var(--glow-color);
+    padding: 12px 40px;
+    border-radius: 50px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 400;
     letter-spacing: 2px;
     text-transform: uppercase;
-    backdrop-filter: blur(2px); /* ボタン自体にも少しぼかし効果 */
+    backdrop-filter: blur(2px);
 }
 #stop-button:hover {
     background: var(--glow-color);
-    color: #0a0a0a; /* 暗い文字色でコントラストを付ける */
-    box-shadow: 0 0 25px var(--glow-color-transparent); /* 光る影を追加 */
+    color: #0a0a0a;
+    box-shadow: 0 0 25px var(--glow-color-transparent);
 }
-
 
 /* --- プレイリストカード --- */
 .game-gallery { 
@@ -191,54 +220,27 @@ header p {
     stroke: var(--glow-color);
 }
 
+/* ★修正点: 上で定義した変数を使ってスタイルを指定 */
 .card-title {
-    font-family: 'Noto Sans JP', sans-serif;
-    font-weight: 300;
-    font-size: 1em;
+    font-family: var(--font-modern);
+    font-size: var(--font-size-card-title);
+    font-weight: 400; /* 細すぎず読みやすい太さに */
     color: #ccc;
     text-shadow: none;
     line-height: 1.5;
 }
 
-/* ステータスバッジ */
-.status-badge {
-    position: absolute;
-    top: 10px; right: 10px;
-    font-size: 0.7em;
-    padding: 3px 8px;
-    border-radius: 5px;
-    background: rgba(0,0,0,0.5);
-    color: #aaa;
-}
-.loading, .error { display: none; }
-
-/* --- レスポンシブ対応 (メディアクエリ) --- */
+/* --- レスポンシブ対応 --- */
 @media (max-width: 768px) {
-    body {
-        padding: 40px 15px; /* 左右の余白を少し狭く */
-    }
-    header {
-        margin-bottom: 40px;
-    }
-    #player-info {
-        margin-bottom: 30px;
-    }
-    .game-gallery { 
-        gap: 15px; /* カード間の隙間を狭く */
-    }
+    body { padding: 40px 15px; }
+    header { margin-bottom: 40px; }
+    #player-info.visible { margin-bottom: 30px; }
+    .game-gallery { gap: 15px; }
 }
 
 @media (max-width: 480px) {
-    body {
-        padding: 30px 10px; /* さらに余白を狭く */
-    }
-    h1 {
-        letter-spacing: 1px; /* 文字間隔を詰める */
-    }
-    #now-playing {
-        font-size: 1.3em; /* 曲名を少し小さく */
-    }
-    .playlist-card {
-        padding: 15px; /* カード内の余白を調整 */
-    }
+    body { padding: 30px 10px; }
+    h1 { letter-spacing: 1px; }
+    #now-playing { font-size: 1.3em; }
+    .playlist-card { padding: 15px; }
 }

@@ -2,33 +2,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- 設定 ---
     const AUDIO_BASE = './music/';
-    
-    // ★★★ ここに、ご要望通りの4曲のプレイリストを新しい順番とアイコンで作成しました ★★★
     const playlists = [
-        { 
-            title: "Fuwari",
-            file: "fuwari.mp3",
-            ready: true,
-            icon: `<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>` // ハートのアイコン
-        },
-        { 
-            title: "Sable",
-            file: "sable.mp3",
-            ready: true,
-            icon: `<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" /></svg>` // 正方形のアイコン
-        },
-        { 
-            title: "Dorayaki",
-            file: "dorayaki.mp3",
-            ready: true,
-            icon: `<svg viewBox="0 0 24 24"><path d="M5 11 C5 7, 19 7, 19 11 M5 13 C5 17, 19 17, 19 13"/></svg>` // どら焼きのアイコン
-        },
-        { 
-            title: "Cafe", // dacquoise.mp3 のタイトルを Cafe に変更
-            file: "dacquoise.mp3",
-            ready: true,
-            icon: `<svg viewBox="0 0 24 24"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm-2 10c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2V5h10v8zm4-5h-2V5h2v3z"/></svg>` // コーヒーカップのアイコン
-        }
+        { title: "Fuwari", file: "fuwari.mp3", ready: true, icon: `<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>` },
+        { title: "Sable", file: "sable.mp3", ready: true, icon: `<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" /></svg>` },
+        { title: "Dorayaki", file: "dorayaki.mp3", ready: true, icon: `<svg viewBox="0 0 24 24"><path d="M5 11 C5 7, 19 7, 19 11 M5 13 C5 17, 19 17, 19 13"/></svg>` },
+        { title: "Cafe", file: "dacquoise.mp3", ready: true, icon: `<svg viewBox="0 0 24 24"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm-2 10c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2V5h10v8zm4-5h-2V5h2v3z"/></svg>` }
     ];
 
     // --- DOM要素 ---
@@ -59,11 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function createPlaylistCards() {
         controlsContainer.innerHTML = '';
         playlists.forEach((playlist) => {
+            if (!playlist.ready) return; 
+
             const card = document.createElement('div');
             card.className = 'playlist-card';
             card.dataset.file = playlist.file;
-            if (!playlist.ready) card.classList.add('disabled');
-            card.innerHTML = `<div class="card-icon-container">${playlist.icon}</div><span class="status-badge coming-soon">Coming Soon</span><span class="status-badge loading" style="display: none;">Loading...</span><span class="status-badge error" style="display: none;">Load Error</span><h2 class="card-title">${playlist.title}</h2>`;
+            
+            card.innerHTML = `<div class="card-icon-container">${playlist.icon}</div><h2 class="card-title">${playlist.title}</h2>`;
             controlsContainer.appendChild(card);
         });
     }
@@ -109,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startUiUpdateLoop();
 
             updateCardStatus(file, 'playing');
-            playerInfo.classList.remove('opacity-0');
+            playerInfo.classList.add('visible');
             seekBar.disabled = false;
             nowPlayingEl.textContent = playlistItem.title;
 
@@ -128,10 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
         stopUiUpdateLoop();
 
         updateCardStatus(currentTrackFile, 'idle');
-        playerInfo.classList.add('opacity-0');
+        playerInfo.classList.remove('visible');
         seekBar.disabled = true;
         seekBar.value = 0;
+        nowPlayingEl.textContent = '';
         currentTrackFile = null;
+
+        drawWaveform();
     }
 
     // --- UI更新ループ ---
@@ -175,6 +158,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const player = players[currentTrackFile];
         const newTime = player.buffer.duration * (seekBar.value / 100);
         player.seek(newTime);
+
+        // ★★★ ここからが修正点 ★★★
+        // 現在の曲の情報を playlists 配列から見つけ出す
+        const playlistItem = playlists.find(p => p.file === currentTrackFile);
+        if (playlistItem) {
+            // 曲名表示を、元の曲名に戻す
+            nowPlayingEl.textContent = playlistItem.title;
+        }
+        // ★★★ ここまでが修正点 ★★★
     }
 
     function handleSeeking() {
@@ -197,6 +189,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const width = waveformCanvas.clientWidth;
         const height = waveformCanvas.clientHeight;
         waveformCtx.clearRect(0, 0, width, height);
+
+        if (!currentTrackFile) {
+            return;
+        }
+        
         if (!waveform) return;
         
         const values = waveform.getValue();
@@ -223,8 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.playlist-card').forEach(c => {
             if (c.dataset.file === file) {
                 c.classList.toggle('active', status === 'playing');
-                c.querySelector('.loading').style.display = status === 'loading' ? 'block' : 'none';
-                c.querySelector('.error').style.display = status === 'error' ? 'block' : 'none';
             } else {
                 c.classList.remove('active');
             }

@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Inter:wght@300;400&display=swap" rel="stylesheet">
 
-    <!-- ★修正点: 同じフォルダ内のCSSを読み込む -->
+    <!-- 同じフォルダ内のCSSを読み込む -->
     <link rel="stylesheet" href="style.css">
     
     <!-- ライブラリの読み込み -->
@@ -29,7 +29,8 @@
         <main>
             <canvas id="waveform"></canvas>
 
-            <div id="player-info" class="opacity-0">
+            <!-- ★修正点: class="opacity-0" を削除しました。表示/非表示はCSSとJSで制御します -->
+            <div id="player-info">
                 <p id="now-playing"></p>
                 <input id="seek-bar" type="range" min="0" max="100" value="0" step="0.1" disabled>
                 <button id="stop-button" aria-label="Stop playback">STOP</button>
@@ -41,7 +42,7 @@
         </main>
     </div>
 
-    <!-- ★修正点: 同じフォルダ内のJSを読み込む -->
+    <!-- 同じフォルダ内のJSを読み込む -->
     <script src="script.js" defer></script>
 </body>
 </html>
