@@ -1,213 +1,244 @@
-/* Google Fontsの読み込み */
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Lato:wght@300;400&display=swap');
+/* --- 基本設定と変数 --- */
+:root {
+    --glow-color: #D4AF37;
+    --glow-color-transparent: rgba(212, 175, 55, 0.7);
+}
 
-/* --- 基本スタイル --- */
-body {
-    font-family: 'Lato', sans-serif;
-    background: linear-gradient(120deg, #181818 0%, #28231c 100%);
-    color: #EAEAEA;
+body { 
+    font-family: 'Inter', 'Noto Sans JP', sans-serif;
+    background-color: #0a0a0a;
+    color: #e0e0e0;
+    margin: 0; 
+    padding: 40px 20px; 
+    font-weight: 300;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     min-height: 100vh;
 }
 
-/* --- ヘッダー --- */
-.header-title {
-    font-family: 'Cormorant Garamond', serif;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    color: #D4AF37;
-    text-shadow: 0 2px 8px #201700cc;
-    font-size: 2.6rem;
+a {
+    text-decoration: none; /* リンクの下線を全体で無効化 */
+    color: inherit;
 }
 
-.header-subtitle {
-    font-family: 'Lato', sans-serif;
-    font-weight: 300;
-    color: #e0cfa0;
-    opacity: 0.95;
-    letter-spacing: 0.06em;
-    margin-top: 0.5rem;
+.container {
+    width: 100%;
+    max-width: 800px;
 }
+
+/* --- 背景エフェクト --- */
+.background-aurora {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: radial-gradient(ellipse at 20% 80%, rgba(88, 76, 21, 0.15), transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(44, 62, 80, 0.15), transparent 50%);
+    animation: aurora 25s infinite alternate;
+    z-index: -1;
+}
+
+@keyframes aurora {
+    0% { transform: rotate(0deg) scale(1.5); }
+    100% { transform: rotate(360deg) scale(2.2); }
+}
+
+/* --- ヘッダー --- */
+header { 
+    text-align: center; 
+    margin-bottom: 40px; 
+}
+
+h1 { 
+    font-family: 'Cormorant Garamond', serif;
+    color: #fff;
+    font-size: clamp(2.5em, 8vw, 4em);
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-shadow: 0 0 7px #fff, 0 0 12px var(--glow-color), 0 0 25px var(--glow-color), 0 0 40px var(--glow-color-transparent);
+    margin: 0;
+    animation: pulse 5s infinite alternate;
+}
+
+@keyframes pulse {
+    from { text-shadow: 0 0 7px #fff, 0 0 12px var(--glow-color), 0 0 25px var(--glow-color); }
+    to { text-shadow: 0 0 7px #fff, 0 0 20px var(--glow-color), 0 0 45px var(--glow-color); }
+}
+
+header p {
+    color: #a0a0a0;
+    font-size: 1.1em;
+    letter-spacing: 1px;
+    margin-top: 0.5em;
+}
+
+/* --- 波形 --- */
+#waveform { 
+    width: 100%; 
+    height: 120px; 
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(5px);
+}
+
+/* --- ここから下がプレイヤー情報の重要な修正点 --- */
+
+/* プレイヤー情報エリア全体 */
+#player-info {
+    transition: opacity 0.5s ease;
+    padding: 25px 20px; /* パディングを調整 */
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    margin-bottom: 40px;
+    backdrop-filter: blur(5px);
+    
+    /* ★修正点1: Flexboxを使って中身を確実に中央揃えにします */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 曲名 */
+#now-playing {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5em; /* 少し大きく */
+    color: var(--glow-color);
+    margin: 0 0 20px 0;
+}
+
+/* シークバー */
+#seek-bar {
+    width: 90%; /* 幅をコンテナより少し狭く */
+    max-width: 500px; /* PCでの最大幅を設定 */
+    accent-color: var(--glow-color);
+    margin-bottom: 25px; /* ボタンとの間隔を確保 */
+}
+
+/* ★修正点2: STOPボタンのデザインを全面的に刷新 */
+#stop-button {
+    background: transparent;
+    border: 1px solid rgba(212, 175, 55, 0.5); /* ゴールドの細い枠線 */
+    color: var(--glow-color); /* ゴールドの文字色 */
+    padding: 12px 40px; /* 内側の余白を調整 */
+    border-radius: 50px; /* 角を丸くしてカプセル型に */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    backdrop-filter: blur(2px); /* ボタン自体にも少しぼかし効果 */
+}
+#stop-button:hover {
+    background: var(--glow-color);
+    color: #0a0a0a; /* 暗い文字色でコントラストを付ける */
+    box-shadow: 0 0 25px var(--glow-color-transparent); /* 光る影を追加 */
+}
+
 
 /* --- プレイリストカード --- */
-.playlist-card {
-    background: radial-gradient(circle at 60% 40%, #2c2c2c 80%, #3e2e13 120%);
-    border-radius: 1rem;
-    box-shadow: 0 10px 32px rgba(0,0,0,0.5);
-    cursor: pointer;
+.game-gallery { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+    gap: 20px; 
+}
+
+.playlist-card { 
     position: relative;
-    padding: 2.2rem 1.2rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px; 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 20px;
     text-align: center;
-    transition: 
-        transform 0.35s cubic-bezier(0.22,1,0.36,1),
-        box-shadow 0.45s cubic-bezier(0.19, 1, 0.22, 1),
-        border-color 0.3s,
-        background 0.6s;
-    border: 2px solid transparent;
-    margin-bottom: 0.5rem;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+    cursor: pointer;
 }
-
-.playlist-card:not(.disabled):hover,
-.playlist-card:not(.disabled):focus {
-    transform: translateY(-6px) scale(1.025);
-    box-shadow: 0 24px 60px #d4af3720, 0 2px 12px #fffbe6aa;
-    outline: none;
-    border-color: #D4AF37;
-    background: radial-gradient(circle at 40% 50%, #39332a 60%, #614f1a 140%);
+.playlist-card:hover {
+    transform: translateY(-5px);
+    background: rgba(212, 175, 55, 0.1);
+    border-color: var(--glow-color-transparent);
 }
-
 .playlist-card.active {
-    border-color: #D4AF37;
-    animation: glow 1.3s ease-in-out infinite alternate;
-    box-shadow: 0 0 32px #d4af37cc, 0 2px 16px #ffe8b022;
+    background: rgba(212, 175, 55, 0.2);
+    border-color: var(--glow-color);
+    box-shadow: 0 0 20px var(--glow-color-transparent);
 }
-
-@keyframes glow {
-    0% { box-shadow: 0 0 12px #d4af3733; }
-    100% { box-shadow: 0 0 38px #d4af37cc; }
-}
-
 .playlist-card.disabled {
-    opacity: 0.45;
+    opacity: 0.4;
+    filter: grayscale(80%);
     cursor: not-allowed;
-    filter: grayscale(70%);
-    border-color: #8882;
 }
 
-/* --- カード内バッジ --- */
-.status-badge {
-    display: none;
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    background: #D4AF37;
-    color: #201700;
-    font-size: 0.72rem;
-    font-weight: bold;
-    padding: 0.22rem 0.75rem;
-    border-radius: 0.4rem;
-    box-shadow: 0 0 4px #d4af3733;
-    letter-spacing: 0.06em;
-    z-index: 2;
-}
-
-.playlist-card.disabled .coming-soon {
-    display: block;
-}
-
-.playlist-card .loading { background: #fffbe6; color: #a78627; }
-.playlist-card .error { background: #7a3200; color: #fffde4; }
-
-/* --- カード内アイコン --- */
 .card-icon-container {
-    height: 55px;
-    margin-bottom: 1.15rem;
+    height: 48px;
+    margin-bottom: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-
 .card-icon-container svg {
-    width: 48px;
-    height: 48px;
-    stroke: #e8e3b7;
-    stroke-width: 1.4;
+    width: 40px; height: 40px;
+    stroke: #a0a0a0;
+    stroke-width: 1.2;
     fill: none;
-    transition: stroke 0.3s, filter 0.3s;
-    filter: drop-shadow(0 0 9px #d4af3722);
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    transition: all 0.3s ease;
 }
-
-.playlist-card:not(.disabled):hover .card-icon-container svg,
-.playlist-card:not(.disabled):focus .card-icon-container svg,
+.playlist-card:hover .card-icon-container svg,
 .playlist-card.active .card-icon-container svg {
-    stroke: #D4AF37;
-    filter: drop-shadow(0 0 18px #d4af3760);
+    stroke: var(--glow-color);
 }
 
 .card-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.22rem;
-    margin-top: 0.2rem;
-    letter-spacing: 0.06em;
-    color: #F3EEC6;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    font-size: 1em;
+    color: #ccc;
+    text-shadow: none;
+    line-height: 1.5;
 }
 
-/* --- 波形 & プレイヤー --- */
-#waveform { 
-    width: 100%; 
-    height: 150px; 
-    background: linear-gradient(90deg, #111 60%, #1a130a 100%);
-    border-radius: 0.3rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 6px 22px #000a;
+/* ステータスバッジ */
+.status-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 0.7em;
+    padding: 3px 8px;
+    border-radius: 5px;
+    background: rgba(0,0,0,0.5);
+    color: #aaa;
+}
+.loading, .error { display: none; }
+
+/* --- レスポンシブ対応 (メディアクエリ) --- */
+@media (max-width: 768px) {
+    body {
+        padding: 40px 15px; /* 左右の余白を少し狭く */
+    }
+    header {
+        margin-bottom: 40px;
+    }
+    #player-info {
+        margin-bottom: 30px;
+    }
+    .game-gallery { 
+        gap: 15px; /* カード間の隙間を狭く */
+    }
 }
 
-#player-info { 
-    transition: opacity 0.5s; 
-    min-height: 86px;
-}
-
-#now-playing {
-    color: #ffefa5;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.14rem;
-    letter-spacing: 0.08em;
-    text-shadow: 0 1px 10px #d4af3720;
-}
-
-/* --- シークバー --- */
-#seek-bar { 
-    width: 100%; 
-    margin-top: 1.3rem;
-    accent-color: #d4af37;
-    height: 4px;
-    background: linear-gradient(90deg, #ffe084 0%, #d4af37 100%);
-    border-radius: 12px;
-}
-
-#seek-bar:disabled { 
-    opacity: 0.6; 
-    filter: grayscale(40%);
-}
-
-#seek-bar::-webkit-slider-thumb {
-    appearance: none;
-    width: 18px; height: 18px;
-    background: linear-gradient(145deg, #fffbe6 40%, #d4af37 100%);
-    border: 2.5px solid #d4af37;
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(212,175,55,0.25);
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-#seek-bar::-moz-range-thumb {
-    width: 18px; height: 18px;
-    background: linear-gradient(145deg, #fffbe6 40%, #d4af37 100%);
-    border: 2.5px solid #d4af37;
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(212,175,55,0.25);
-    cursor: pointer;
-}
-
-#seek-bar:focus { 
-    outline: none; 
-}
-
-/* --- その他 --- */
-::-webkit-scrollbar { 
-    width: 10px; 
-    background: #29220d;
-}
-::-webkit-scrollbar-thumb { 
-    background: #d4af37; 
-    border-radius: 8px;
-}
-
-/* --- レスポンシブ対応 --- */
-@media (max-width: 900px) {
-    .playlist-card { 
-        padding: 1.6rem 0.7rem; 
+@media (max-width: 480px) {
+    body {
+        padding: 30px 10px; /* さらに余白を狭く */
+    }
+    h1 {
+        letter-spacing: 1px; /* 文字間隔を詰める */
+    }
+    #now-playing {
+        font-size: 1.3em; /* 曲名を少し小さく */
+    }
+    .playlist-card {
+        padding: 15px; /* カード内の余白を調整 */
     }
 }
