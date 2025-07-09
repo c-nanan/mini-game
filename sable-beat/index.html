@@ -159,7 +159,7 @@
                     switch (action) {
                         case 'select-song': currentSong = song; showStyleSelect(); break;
                         case 'select-style': currentPlayStyle = style; prepareGame(); break;
-                        case 'retry': currentStage = 0; showStyleSelect(); break;
+                        case 'retry': prepareGame(); break; // ★修正点: ステージをリセットせずに同じステージをリトライ
                         case 'back-to-song-select': showSongSelect(); break;
                     }
                 };
@@ -196,8 +196,6 @@
             uiLayer.classList.add('hidden');
             beatmap.forEach(createNote);
             
-            audio.onended = () => { setTimeout(finishStage, 1000); };
-
             audio.currentTime = 0;
             audio.play().catch(e => console.error("Audio play failed:", e));
             gameLoop();
@@ -207,8 +205,17 @@
             notes.push({ ...noteData, y: -NOTE_HEIGHT, time: noteData.time, isHit: false });
         }
 
+        // ★★★ ここからが重要な修正箇所 ★★★
         function gameLoop() {
             if (!isGameRunning) return;
+
+            // 曲の終了を、再生時間と曲の総時間で比較する確実な方法に変更
+            if (audio.duration > 0 && audio.currentTime >= audio.duration - 0.05) {
+                isGameRunning = false; // ループを即座に停止
+                setTimeout(finishStage, 1000); // 最後のノーツが消えるのを待ってから終了処理
+                return;
+            }
+
             const currentTime = audio.currentTime;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawLanes();
@@ -230,8 +237,6 @@
         }
         
         function finishStage() {
-            if (!isGameRunning) return;
-            isGameRunning = false;
             audio.pause();
 
             const clearThreshold = beatmap.length * 300 * 0.7; 
@@ -245,6 +250,7 @@
                 } else { showEndScreen(true); }
             } else { showEndScreen(false); }
         }
+        // ★★★ ここまでが重要な修正箇所 ★★★
         
         function showEndScreen(isTourClear) {
              const message = isTourClear ? "TOUR CLEAR! <br> 全ステージ制覇おめでとう！" : "STAGE FAILED...";
@@ -354,14 +360,10 @@
             }
         });
 
-        // ★★★ ここからがマルチタッチ対応の修正箇所 ★★★
-
-        // タップ処理のメイン関数
         function processTouches(touches) {
-            if (currentKeyMap) return; // キーボードモードの場合は何もしない
+            if (currentKeyMap) return;
             const rect = canvas.getBoundingClientRect();
             
-            // 触れられた全ての指の情報をループ処理
             for (let i = 0; i < touches.length; i++) {
                 const touch = touches[i];
                 const touchX = touch.clientX - rect.left;
@@ -373,16 +375,13 @@
             }
         }
         
-        // 指が触れた瞬間のイベント
         canvas.addEventListener('touchstart', (event) => {
-            event.preventDefault(); // 画面のスクロールなどを防ぐ
-            processTouches(event.touches); // 触れている全ての指の情報を処理
+            event.preventDefault();
+            processTouches(event.touches);
         }, { passive: false });
 
-        // マウスのクリックイベント（PCでの操作用）
         canvas.addEventListener('mousedown', (event) => {
             event.preventDefault();
-            // マウスは常に1点なので、そのまま処理
             if (currentKeyMap) return;
             const rect = canvas.getBoundingClientRect();
             const touchX = event.clientX - rect.left;
