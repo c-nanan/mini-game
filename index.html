@@ -6,146 +6,87 @@
     <title>NANAN Portal</title>
     
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="shortcut icon" href="/favicon.ico">
 
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <!-- Google Fontsからフォントを読み込みます -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Inter:wght@300;400&display=swap" rel="stylesheet">
 
-<link rel="manifest" href="/site.webmanifest">
+    <!-- 外部CSSを読み込みます -->
+    <link rel="stylesheet" href="style.css">
 
-<link rel="shortcut icon" href="/favicon.ico">
-    <style>
-        body { 
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            background-color: #f0f2f5; 
-            color: #333; 
-            margin: 0; 
-            padding: 20px; 
-        }
-        header { 
-            text-align: center; 
-            margin-bottom: 40px; 
-        }
-        h1 { 
-            color: #5a4a42; 
-            font-size: 2.5em;
-        }
-        p {
-            color: #666;
-        }
-        .game-gallery { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 25px; 
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .game-card { 
-            background-color: #fff; 
-            border-radius: 10px; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
-            text-decoration: none; 
-            color: inherit; 
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column; 
-            transition: transform 0.3s ease, box-shadow 0.3s ease; 
-        }
-        .game-card:hover { 
-            transform: translateY(-5px); 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-        }
-        .game-card img { 
-            width: 100%; 
-            height: 200px; 
-            object-fit: cover; 
-            border-bottom: 1px solid #eee;
-        }
-        .game-card-content { 
-            padding: 20px; 
-            flex-grow: 1; 
-        }
-        .game-card h2 { 
-            margin-top: 0; 
-            color: #333;
-        }
-        .play-button { 
-            background: linear-gradient(45deg, #e44d26, #f16529);
-            color: white; 
-            text-align: center; 
-            padding: 12px; 
-            font-weight: bold; 
-            margin-top: auto;
-        }
-        /* 美味しい音楽カード専用のスタイル */
-        .music-card .play-button {
-             background: linear-gradient(45deg, #D4AF37, #C39B2F);
-        }
-    </style>
 </head>
 <body>
+    <div class="background-aurora"></div>
+
     <header>
         <h1>NANAN Portal</h1>
         <p>C'est du nanan</p>
     </header>
 
     <main class="game-gallery">
-        <!-- ▼▼▼ ここに「美味しい音楽」を追加しました ▼▼▼ -->
-        <a href="./delicious-mus        <!-- ...existing code... -->
-        <div class="w-full flex items-center justify-center mt-4">
-            <input
-                id="seek-bar"
-                type="range"
-                min="0"
-                max="100"
-                value="0"
-                step="0.01"
-                class="w-3/4 h-2 rounded-lg appearance-none bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 shadow-lg outline-none transition-all duration-300
-                       focus:ring-2 focus:ring-yellow-500"
-                style="
-                    accent-color: #D4AF37;
-                    box-shadow: 0 2px 8px rgba(212,175,55,0.15);
-                "
-            >
-        </div>
-        <!-- ...existing code... -->ic" class="game-card music-card">
-            <img src="https://placehold.co/600x400/1a1a1a/D4AF37?text=Delicious+Music" alt="美味しい音楽のイメージ画像">
-            <div class="game-card-content">
-                <h2>美味しい音楽</h2>
-                <p>お菓子と一緒にお楽しみください。</p>
+        <!-- ★修正点: 音楽プレイヤーへのリンクをフォルダ指定に変更 -->
+        <a href="./delicious-music/" class="game-card">
+            <div class="card-content">
+                <div class="card-title-area">
+                    <h2>Delicious Music</h2>
+                </div>
+                <div class="card-text-content">
+                    <h3>美味しい音楽</h3>
+                    <p>お菓子と一緒にお楽しみください。</p>
+                </div>
+                <div class="play-button">LISTEN NOW</div>
             </div>
-            <div class="play-button">LISTEN NOW</div>
-        </a>
-        <!-- ▲▲▲ ここまで ▲▲▲ -->
-
-        <!-- ハンドピックゲーム -->
-        <a href="./games/procoffee-game/index.html" class="game-card">
-            <img src="https://placehold.co/600x400/A0522D/FFFFFF?text=Handpick+Game" alt="ハンドピックゲームのゲーム画面">
-            <div class="game-card-content">
-                <h2>ハンドピックゲーム</h2>
-                <p>美味しいコーヒーは豆選びから！制限時間内に欠点豆を取り除いて、最高のコーヒーを目指す選別ミニゲーム。</p>
-            </div>
-            <div class="play-button">PLAY NOW</div>
         </a>
 
-        <!-- サブレ・インベーダーズ DX -->
-        <a href="./games/sable-invaders/" class="game-card">
-            <img src="https://placehold.co/600x400/8b7969/FFFFFF?text=Sable+Invaders" alt="サブレ・インベーダーズのゲーム画面">
-            <div class="game-card-content">
-                <h2>サブレ・インベーダーズ DX</h2>
-                <p>サブレ軍団の襲来からお店を守る、懐かしのシューティングゲーム！</p>
+        <!-- ★修正点: ハンドピックゲームへのリンクをフォルダ指定に変更 -->
+        <a href="./handpick-game/" class="game-card">
+            <div class="card-content">
+                <div class="card-title-area">
+                    <h2>Handpick Game</h2>
+                </div>
+                <div class="card-text-content">
+                    <h3>ハンドピックゲーム</h3>
+                    <p>美味しいコーヒーは豆選びから！制限時間内に欠点豆を取り除いて、最高のコーヒーを目指す選別ミニゲーム。</p>
+                </div>
+                <div class="play-button">PLAY NOW</div>
             </div>
-            <div class="play-button">PLAY NOW</div>
         </a>
 
-        <!-- サブレ・ビート -->
-        <a href="./games/sable-beat-pro/" class="game-card">
-            <img src="https://placehold.co/600x400/2c3e50/FFFFFF?text=Sable+Beat+Pro" alt="サブレ・ビート・プロのゲーム画面">
-            <div class="game-card-content">
-                <h2>サブレ・ビート</h2>
-                <p>音楽に合わせてサブレを叩くリズムゲーム。</p>
+        <!-- ★修正点: インベーダーズへのリンクをフォルダ指定に変更 -->
+        <a href="./sable-invaders/" class="game-card">
+            <div class="card-content">
+                <div class="card-title-area">
+                    <h2>Sable Invaders DX</h2>
+                </div>
+                <div class="card-text-content">
+                    <h3>サブレ・インベーダーズ DX</h3>
+                    <p>サブレ軍団の襲来からお店を守る、懐かしのシューティングゲーム！</p>
+                </div>
+                <div class="play-button">PLAY NOW</div>
             </div>
-            <div class="play-button">PLAY NOW</div>
+        </a>
+
+        <!-- ★修正点: サブレ・ビートへのリンクをフォルダ指定に変更 -->
+        <a href="./sable-beat/" class="game-card">
+             <div class="card-content">
+                <div class="card-title-area">
+                    <h2>Sable Beat</h2>
+                </div>
+                <div class="card-text-content">
+                    <h3>サブレ・ビート</h3>
+                    <p>音楽に合わせてサブレを叩くリズムゲーム。</p>
+                </div>
+                <div class="play-button">PLAY NOW</div>
+            </div>
         </a>
     </main>
+
+    <!-- 動きを制御するためのJavaScriptファイルを読み込みます -->
+    <script src="script.js" defer></script>
 </body>
 </html>

@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ready: true,
             icon: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM9 12l2 2 4-4" fill="currentColor" stroke="none"/></svg>`
         },
-        // スクリーンショットにあった曲名に合わせます
         { 
             title: "Dacquoise", 
             file: "dacquoise.mp3", 
@@ -45,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let waveform = null;
     let currentTrackIndex = -1;
     let isSeeking = false;
+    let transportUpdateId = null; // ★修正点: シークバー更新イベントのIDを管理する変数を追加
 
     // --- 初期化処理 ---
     function initialize() {
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners();
         initWaveform();
         resizeCanvas();
-        animationLoop();
+        animationLoop(); // 波形描画はこれまで通り毎フレーム行う
     }
 
     // --- UI生成 ---
@@ -93,21 +93,28 @@ document.addEventListener('DOMContentLoaded', () => {
         Tone.Destination.connect(waveform);
     }
 
-    // --- アニメーションループ ---
+    // --- アニメーションとUI更新 ---
     function animationLoop() {
         requestAnimationFrame(animationLoop);
-        drawWaveform();
-        updateSeekBar();
+        drawWaveform(); // ★修正点: 波形描画だけを行う
     }
     
-    // --- Canvas描画 ---
+    // ★修正点: Tone.Transportと同期してシークバーを更新する新しい関数
+    function updateSeekBar() {
+        const player = players[currentTrackIndex];
+        if (player && player.loaded && player.state === 'started' && !isSeeking) {
+            const progress = (player.position / player.buffer.duration) * 100;
+            if (isFinite(progress)) {
+                seekBar.value = progress;
+            }
+        }
+    }
+    
     function resizeCanvas() {
         const dpr = window.devicePixelRatio || 1;
         const rect = waveformCanvas.getBoundingClientRect();
-        
         waveformCanvas.width = rect.width * dpr;
         waveformCanvas.height = rect.height * dpr;
-
         waveformCtx.scale(dpr, dpr);
         drawWaveform();
     }
@@ -115,15 +122,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawWaveform() {
         const width = waveformCanvas.clientWidth;
         const height = waveformCanvas.clientHeight;
-        
         waveformCtx.clearRect(0, 0, width, height);
-
         if (!waveform || currentTrackIndex === -1 || !players[currentTrackIndex]?.loaded) {
             return;
         }
-        
         const values = waveform.getValue();
-        
         const grad = waveformCtx.createLinearGradient(0, 0, width, 0);
         grad.addColorStop(0, 'rgba(212,175,55,0)');
         grad.addColorStop(0.3, 'rgba(212,175,55,0.7)');
@@ -131,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
         grad.addColorStop(1, 'rgba(212,175,55,0)');
         waveformCtx.strokeStyle = grad;
         waveformCtx.lineWidth = 2;
-
         waveformCtx.beginPath();
         waveformCtx.moveTo(0, height / 2);
         for (let i = 0; i < values.length; i++) {
@@ -141,26 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         waveformCtx.stroke();
     }
-
-  // --- UI更新 ---
-function updateSeekBar() {
-    const player = players[currentTrackIndex];
-
-    // プレイヤーが存在し、読み込み完了、再生中、かつユーザーがシークバーを操作していないかを確認します
-    if (player && player.loaded && player.state === 'started' && !isSeeking) {
-        
-        // player.position はTone.jsの現在の再生位置（秒）を正確に取得します
-        // player.buffer.duration は読み込んだ音声ファイルの総時間（秒）です
-        const progress = (player.position / player.buffer.duration) * 100;
-        
-        // 計算した進捗率をシークバーの value に設定します
-        // isFiniteで、計算結果が有効な数値か念のため確認します
-        if (isFinite(progress)) {
-            seekBar.value = progress;
-        }
-    }
-}
-
     
     function updateCardStatus(index, status) {
         document.querySelectorAll('.playlist-card').forEach((c, i) => {
@@ -223,7 +205,7 @@ function updateSeekBar() {
         updateNowPlayingText();
     }
 
-    // --- 再生ロジック ---
+    // --- 再生ロジック (★ここから下が全面的に修正されています) ---
     async function playTrack(index) {
         if (!playlists[index].ready || index === currentTrackIndex) return;
 
@@ -232,6 +214,12 @@ function updateSeekBar() {
         if (currentTrackIndex !== -1 && players[currentTrackIndex]) {
             players[currentTrackIndex].stop();
             updateCardStatus(currentTrackIndex, 'idle');
+        }
+
+        // 古いタイマーが残っていればクリア
+        if (transportUpdateId) {
+            Tone.Transport.clear(transportUpdateId);
+            transportUpdateId = null;
         }
         
         const oldTrackIndex = currentTrackIndex;
@@ -265,6 +253,18 @@ function updateSeekBar() {
         if (player.state !== 'started') {
             player.start();
         }
+        
+        // Tone.jsの全体タイマーを開始
+        Tone.Transport.start();
+
+        // 古いタイマーをクリア
+        if (transportUpdateId) {
+            Tone.Transport.clear(transportUpdateId);
+        }
+
+        // 0.1秒ごとにupdateSeekBar関数を実行するようスケジュール
+        transportUpdateId = Tone.Transport.scheduleRepeat(updateSeekBar, "0.1");
+
         updateCardStatus(index, 'playing');
         playerInfo.classList.remove('opacity-0');
         seekBar.disabled = false;
@@ -274,6 +274,14 @@ function updateSeekBar() {
     function stopAllPlayback() {
         if (currentTrackIndex !== -1 && players[currentTrackIndex]) {
             players[currentTrackIndex].stop();
+            
+            // 全体タイマーを停止し、スケジュールをクリア
+            Tone.Transport.stop();
+            if (transportUpdateId) {
+                Tone.Transport.clear(transportUpdateId);
+                transportUpdateId = null;
+            }
+
             updateCardStatus(currentTrackIndex, 'idle');
             currentTrackIndex = -1;
             playerInfo.classList.add('opacity-0');
