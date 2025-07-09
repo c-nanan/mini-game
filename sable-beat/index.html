@@ -129,9 +129,8 @@
         };
         
         function generateDifficulty(baseBeatmap, stage) {
-            if (stage >= 2) return baseBeatmap; // HARD
-            const ratio = stage === 1 ? 0.75 : 0.5; // NORMAL : EASY
-            // EASY: 50% of notes, NORMAL: 75% of notes
+            if (stage >= 2) return baseBeatmap;
+            const ratio = stage === 1 ? 0.75 : 0.5;
             const step = Math.round(1 / ratio);
             return baseBeatmap.filter((_, index) => index % step === 0);
         }
@@ -144,22 +143,12 @@
 
         function showSongSelect() {
             currentStage = 0;
-            const view = `
-                <p>プレイする曲を選んでください</p>
-                <button class="ui-button" data-action="select-song" data-song="sakusaku">サクサク冒険</button>
-                <button class="ui-button" data-action="select-song" data-song="mochimochi">もちもちリラックス</button>
-            `;
+            const view = `<p>プレイする曲を選んでください</p><button class="ui-button" data-action="select-song" data-song="sakusaku">サクサク冒険</button><button class="ui-button" data-action="select-song" data-song="mochimochi">もちもちリラックス</button>`;
             showView(view);
         }
 
         function showStyleSelect() {
-            const view = `
-                <p>プレイスタイルを選んでください</p>
-                <button class="ui-button" data-action="select-style" data-style="left">左手でプレイ</button>
-                <button class="ui-button" data-action="select-style" data-style="right">右手でプレイ</button>
-                <button class="ui-button" data-action="select-style" data-style="tap">タップでプレイ</button>
-                <button class="ui-button" data-action="back-to-song-select">曲選択に戻る</button>
-            `;
+            const view = `<p>プレイスタイルを選んでください</p><button class="ui-button" data-action="select-style" data-style="left">左手でプレイ</button><button class="ui-button" data-action="select-style" data-style="right">右手でプレイ</button><button class="ui-button" data-action="select-style" data-style="tap">タップでプレイ</button><button class="ui-button" data-action="back-to-song-select">曲選択に戻る</button>`;
             showView(view);
         }
 
@@ -168,22 +157,10 @@
                 button.onclick = (e) => {
                     const { action, song, style } = e.target.dataset;
                     switch (action) {
-                        case 'select-song':
-                            currentSong = song;
-                            showStyleSelect();
-                            break;
-                        case 'select-style':
-                            currentPlayStyle = style;
-                            prepareGame();
-                            break;
-                        case 'retry':
-                            // ★★★ 修正点: ステージをリセットしてスタイル選択へ ★★★
-                            currentStage = 0;
-                            showStyleSelect();
-                            break;
-                        case 'back-to-song-select': 
-                            showSongSelect(); 
-                            break;
+                        case 'select-song': currentSong = song; showStyleSelect(); break;
+                        case 'select-style': currentPlayStyle = style; prepareGame(); break;
+                        case 'retry': currentStage = 0; showStyleSelect(); break;
+                        case 'back-to-song-select': showSongSelect(); break;
                     }
                 };
             });
@@ -195,8 +172,7 @@
                 keyMapDisplay = {};
                 for(const key in currentKeyMap) { keyMapDisplay[currentKeyMap[key]] = (key === ' ' ? 'SPACE' : key.toUpperCase()); }
             } else {
-                currentKeyMap = null;
-                keyMapDisplay = {};
+                currentKeyMap = null; keyMapDisplay = {};
             }
             
             beatmap = generateDifficulty(masterBeatmaps[currentSong], currentStage);
@@ -204,19 +180,13 @@
             audio.preload = "auto";
             showView(`<p>STAGE ${currentStage + 1}<br>読み込み中...</p>`);
 
-            // ★★★ 修正点: 音楽ファイルの読み込み完了を確実に検知する ★★★
             const onCanPlay = () => {
-                // イベントリスナーを一度削除して、複数回発火するのを防ぐ
                 audio.removeEventListener('canplaythrough', onCanPlay);
                 startGame();
             };
 
-            // readyStateが4 (HAVE_ENOUGH_DATA) なら、すでに読み込み完了
-            if (audio.readyState >= 4) {
-                onCanPlay();
-            } else {
-                audio.addEventListener('canplaythrough', onCanPlay, { once: true });
-            }
+            if (audio.readyState >= 4) { onCanPlay(); } 
+            else { audio.addEventListener('canplaythrough', onCanPlay, { once: true }); }
             audio.load();
         }
 
@@ -226,11 +196,7 @@
             uiLayer.classList.add('hidden');
             beatmap.forEach(createNote);
             
-            // ★★★ 修正点: 曲の終了イベントをここで設定 ★★★
-            audio.onended = () => {
-                // 遅延を設けて、最後のノーツが消えるのを待つ
-                setTimeout(finishStage, 1000);
-            };
+            audio.onended = () => { setTimeout(finishStage, 1000); };
 
             audio.currentTime = 0;
             audio.play().catch(e => console.error("Audio play failed:", e));
@@ -253,11 +219,7 @@
                     const timeUntilHit = note.time - currentTime;
                     note.y = JUDGEMENT_LINE_Y - (timeUntilHit * 60 * noteSpeed);
                     drawNote(note);
-                    if (timeUntilHit < -0.2) { 
-                        note.isHit = true; 
-                        showFeedback('MISS'); 
-                        resetCombo(); 
-                    }
+                    if (timeUntilHit < -0.2) { note.isHit = true; showFeedback('MISS'); resetCombo(); }
                 }
             });
 
@@ -268,9 +230,9 @@
         }
         
         function finishStage() {
-            if (!isGameRunning) return; // 複数回呼ばれるのを防ぐ
+            if (!isGameRunning) return;
             isGameRunning = false;
-            audio.pause(); // 念のため停止
+            audio.pause();
 
             const clearThreshold = beatmap.length * 300 * 0.7; 
             const isClear = score >= clearThreshold;
@@ -280,24 +242,13 @@
                     currentStage++;
                     showView(`<div><p>STAGE CLEAR!</p><p>次のステージに進みます...</p></div>`);
                     setTimeout(prepareGame, 2500);
-                } else {
-                    showEndScreen(true);
-                }
-            } else {
-                showEndScreen(false);
-            }
+                } else { showEndScreen(true); }
+            } else { showEndScreen(false); }
         }
         
         function showEndScreen(isTourClear) {
              const message = isTourClear ? "TOUR CLEAR! <br> 全ステージ制覇おめでとう！" : "STAGE FAILED...";
-             const view = `
-                <div>
-                    <p>${message}</p>
-                    <p>SCORE: ${score}</p>
-                    <button class="ui-button" data-action="retry">もう一度挑戦</button>
-                    <button class="ui-button" data-action="back-to-song-select">曲選択に戻る</button>
-                </div>
-            `;
+             const view = `<div><p>${message}</p><p>SCORE: ${score}</p><button class="ui-button" data-action="retry">もう一度挑戦</button><button class="ui-button" data-action="back-to-song-select">曲選択に戻る</button></div>`;
             showView(view);
         }
 
@@ -403,18 +354,43 @@
             }
         });
 
-        function handlePointerInput(event) {
-            event.preventDefault();
-            if (currentKeyMap) return;
+        // ★★★ ここからがマルチタッチ対応の修正箇所 ★★★
+
+        // タップ処理のメイン関数
+        function processTouches(touches) {
+            if (currentKeyMap) return; // キーボードモードの場合は何もしない
             const rect = canvas.getBoundingClientRect();
-            const clientX = event.touches ? event.touches[0].clientX : event.clientX;
-            const touchX = clientX - rect.left;
-            const lane = Math.floor(touchX / (rect.width / LANES));
-            if (lane >= 0 && lane < LANES) handleInput(lane);
+            
+            // 触れられた全ての指の情報をループ処理
+            for (let i = 0; i < touches.length; i++) {
+                const touch = touches[i];
+                const touchX = touch.clientX - rect.left;
+                const lane = Math.floor(touchX / (rect.width / LANES));
+                
+                if (lane >= 0 && lane < LANES) {
+                    handleInput(lane);
+                }
+            }
         }
         
-        canvas.addEventListener('touchstart', handlePointerInput, { passive: false });
-        canvas.addEventListener('mousedown', handlePointerInput);
+        // 指が触れた瞬間のイベント
+        canvas.addEventListener('touchstart', (event) => {
+            event.preventDefault(); // 画面のスクロールなどを防ぐ
+            processTouches(event.touches); // 触れている全ての指の情報を処理
+        }, { passive: false });
+
+        // マウスのクリックイベント（PCでの操作用）
+        canvas.addEventListener('mousedown', (event) => {
+            event.preventDefault();
+            // マウスは常に1点なので、そのまま処理
+            if (currentKeyMap) return;
+            const rect = canvas.getBoundingClientRect();
+            const touchX = event.clientX - rect.left;
+            const lane = Math.floor(touchX / (rect.width / LANES));
+            if (lane >= 0 && lane < LANES) {
+                handleInput(lane);
+            }
+        });
         
         showSongSelect();
     });
