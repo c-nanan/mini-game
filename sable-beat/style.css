@@ -1,0 +1,123 @@
+/* --- 基本設定とデザイン変数 --- */
+:root {
+    --bg-color: #0d1117; /* 深いネイビーブラック */
+    --primary-glow: #00aaff; /* 鮮やかなエレクトリックブルー */
+    --secondary-glow: #ff00ff; /* アクセントのマゼンタ */
+    --text-color: #e6f1ff;
+    --accent-color: rgba(0, 170, 255, 0.2);
+}
+
+/* --- 全体スタイル --- */
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
+    -webkit-user-select: none; user-select: none;
+    overflow: hidden;
+    /* 背景にグリッド線を追加 */
+    background-image: 
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+}
+
+/* --- UIコンテナとタイトル --- */
+.game-container { width: 100%; max-width: 400px; text-align: center; }
+h1 { 
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.2em;
+    font-weight: 900;
+    margin: 0 0 15px 0;
+    color: #fff;
+    text-shadow: 0 0 5px #fff, 0 0 15px var(--primary-glow), 0 0 25px var(--primary-glow);
+}
+
+/* --- スコア・コンボ表示 --- */
+.info-panel { 
+    display: flex;
+    justify-content: space-around;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.4em;
+    margin: 15px 0;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 170, 255, 0.2);
+}
+#score-wrapper, #combo-wrapper {
+    transition: transform 0.2s ease, text-shadow 0.2s ease;
+}
+/* コンボが10以上で光るエフェクト */
+#combo-wrapper.glowing {
+    transform: scale(1.1);
+    text-shadow: 0 0 10px var(--secondary-glow);
+}
+
+/* --- ゲーム画面 --- */
+#canvas-wrapper { 
+    position: relative;
+    width: 100%;
+    box-shadow: 0 0 40px rgba(0, 170, 255, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--primary-glow);
+}
+canvas { 
+    display: block;
+    width: 100%;
+    height: auto;
+    background: linear-gradient(to bottom, #0d1117, #161b22);
+    cursor: pointer;
+}
+
+/* --- UIレイヤーとボタン --- */
+#ui-layer {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex; justify-content: center; align-items: center; flex-direction: column;
+    color: var(--text-color); font-size: 1.5em; text-align: center;
+    background: rgba(13, 17, 23, 0.95);
+    backdrop-filter: blur(5px);
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+#ui-layer.hidden { opacity: 0; }
+#ui-layer p { margin: 0 0 20px 0; text-shadow: 0 0 5px #000; }
+.ui-button {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1em; padding: 15px 30px; border-radius: 8px;
+    border: 2px solid var(--primary-glow);
+    background: var(--accent-color);
+    color: #fff;
+    cursor: pointer; pointer-events: auto; display: block;
+    margin: 15px auto; width: 80%;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 5px var(--primary-glow);
+}
+.ui-button:hover {
+    background: var(--primary-glow);
+    box-shadow: 0 0 20px var(--primary-glow);
+    transform: scale(1.05);
+}
+
+/* --- フィードバックテキスト --- */
+#feedback-text {
+    position: absolute; top: 60%; left: 50%;
+    font-family: 'Orbitron', sans-serif; font-size: 3.5em; font-weight: 900;
+    color: #fff;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* バウンドするような動き */
+    transform: translate(-50%, -50%) scale(0.5);
+}
+#feedback-text.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+#feedback-text[data-type="PERFECT"] { text-shadow: 0 0 15px var(--secondary-glow); }
+#feedback-text[data-type="GOOD"] { text-shadow: 0 0 15px var(--primary-glow); }
+#feedback-text[data-type="BAD"] { color: #ff6b6b; }
+#feedback-text[data-type="MISS"] { color: #888; }
