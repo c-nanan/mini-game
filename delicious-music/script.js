@@ -5,26 +5,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const AUDIO_BASE = './music/';
     const playlists = [
         { 
-            title: "Tokyo Fuwari – Organic Matcha", 
-            file: "matcha.mp3", 
+            title: "Tokyo Fuwari", 
+            file: "fuwari.mp3", 
             ready: true,
             icon: `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM9 12l2 2 4-4" fill="currentColor" stroke="none"/></svg>`
         },
         { 
-            title: "Dacquoise", 
-            file: "dacquoise.mp3", 
+            title: "Sable", 
+            file: "sable.mp3", 
             ready: true, 
             icon: `<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
         },
         { 
-            title: "Tokyo Fuwari – Tanada Yuzu", 
-            file: "yuzu.mp3", 
+            title: "Dorayaki", 
+            file: "dorayaki.mp3", 
             ready: false,
             icon: `<svg viewBox="0 0 24 24"><path d="M5 11 C5 7, 19 7, 19 11 M5 13 C5 17, 19 17, 19 13"/></svg>`
         },
         { 
-            title: "Anko is a Star", 
-            file: "anko.mp3", 
+            title: "Cafe 9", 
+            file: "dacquoise.mp3", 
             ready: false,
             icon: `<svg viewBox="0 0 24 24"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm-2 10c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2V5h10v8zm4-5h-2V5h2v3z"/></svg>`
         }
