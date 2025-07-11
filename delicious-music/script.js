@@ -125,18 +125,19 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (!players[url]) {
                 players[url] = new Tone.Player({ url, loop: true, fadeOut: 0.5 })
-+                                 .toDestination();     // スピーカーへ
-+                players[url].connect(waveform);         // 波形解析へ
+                                 .toDestination();     // スピーカーへ
+                                    .connect(waveform);         // 波形解析へ
                 await Tone.loaded();
             }
             
 
             const player = players[url];
-+            players[url].sync().start(0);               // Transport と同期
-+            if (Tone.Transport.state !== 'started') {   // まだ動いていなければ
-+                Tone.Transport.start();
-+            }
-+            Tone.Transport.seconds = 0;  
+            
+            players[url].sync().start(0);               // Transport と同期
+            if (Tone.Transport.state !== 'started') {   // まだ動いていなければ
+                Tone.Transport.start();
+            }
+            Tone.Transport.seconds = 0;  
             startUiUpdateLoop();
 
             playerInfo.classList.add('visible');
