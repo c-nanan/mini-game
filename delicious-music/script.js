@@ -48,7 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function initialize() {
         try {
             await Tone.start();
-            waveform = new Tone.Waveform().toDestination();
+             // Waveform は“解析専用”にしてスピーカーへは流さない
++            waveform = new Tone.Waveform();
             createPlaylistCards();
             setupEventListeners();
             resizeCanvas();
@@ -123,14 +124,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (!players[url]) {
-                players[url] = new Tone.Player({ url: url, loop: true, fadeOut: 0.5 }).connect(waveform);
+                players[url] = new Tone.Player({ url, loop: true, fadeOut: 0.5 })
++                                 .toDestination();     // スピーカーへ
++                players[url].connect(waveform);         // 波形解析へ
                 await Tone.loaded();
             }
             
+
             const player = players[url];
-            Tone.Transport.seconds = 0; // 再生開始時は必ず0秒から
-            player.start(0);
-            Tone.Transport.start();
++            players[url].sync().start(0);               // Transport と同期
++            if (Tone.Transport.state !== 'started') {   // まだ動いていなければ
++                Tone.Transport.start();
++            }
++            Tone.Transport.seconds = 0;  
             startUiUpdateLoop();
 
             playerInfo.classList.add('visible');
@@ -148,8 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentTrackUrl || !players[currentTrackUrl]) return;
         
         const player = players[currentTrackUrl];
-        Tone.Transport.stop();
-        player.stop();
+        player.stop();             // Transport は止めず、次の曲に備える
         stopUiUpdateLoop();
 
         updateCardStatus(currentTrackUrl, 'idle');
