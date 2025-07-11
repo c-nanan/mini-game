@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await Tone.start();
              // Waveform は“解析専用”にしてスピーカーへは流さない
-+            waveform = new Tone.Waveform();
+            waveform = new Tone.Waveform();
             createPlaylistCards();
             setupEventListeners();
             resizeCanvas();
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
 
             const player = players[url];
-            
+
             players[url].sync().start(0);               // Transport と同期
             if (Tone.Transport.state !== 'started') {   // まだ動いていなければ
                 Tone.Transport.start();
