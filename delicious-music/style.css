@@ -1,94 +1,57 @@
-/*
-================================================================
-タイポグラフィ（文字）設定エリア
-今後、文字のフォントやサイズを変更したい場合は、主にこのエリアを編集してください。
-================================================================
-*/
+/* --- 基本設定とデザイン変数 --- */
 :root {
-    /* --- 色の定義 --- */
-    --glow-color: #D4AF37;
-    --glow-color-transparent: rgba(212, 175, 55, 0.7);
-
-    /* --- フォントファミリーの定義 --- */
-    --font-elegant: 'Cormorant Garamond', serif; /* 優雅なセリフ体 */
-    --font-modern: 'Inter', 'Noto Sans JP', sans-serif; /* モダンなゴシック体 */
-
-    /* --- フォントサイズの定義 --- */
-    /* clamp(最小サイズ, 推奨サイズ, 最大サイズ) を使うことで、画面幅に応じて滑らかに変化します */
-    --font-size-h1: clamp(4rem, 20vw, 7rem);  /* ★メインタイトル (Delicious Music) のサイズ */
-    --font-size-subtitle: clamp(0.9rem, 1.5vw, 1rem);  /* ★サブタイトルのサイズ */
-    --font-size-now-playing: 1.5rem;                  /* 再生中タイトルのサイズ */
-    --font-size-card-title: 0.9rem;                   /* ★カードの文字サイズ */
+    --dm-glow-color: #D4AF37;
+    --dm-glow-color-transparent: rgba(212, 175, 55, 0.7);
+    --dm-font-elegant: 'Cormorant Garamond', serif;
+    --dm-font-modern: 'Inter', 'Noto Sans JP', sans-serif;
+    --dm-font-size-h1: clamp(3.5rem, 10vw, 5.5rem);
+    --dm-font-size-subtitle: clamp(0.9rem, 2.5vw, 1rem);
+    --dm-font-size-now-playing: 1.5rem;
+    --dm-font-size-card-title: 0.9rem;
 }
 
-/* ============================================================== */
-
-body { 
-    font-family: var(--font-modern); /* モダンなフォントを基本に設定 */
-    background-color: #0a0a0a;
-    color: #e0e0e0;
-    margin: 0; 
-    padding: 40px 20px; 
-    font-weight: 300;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-}
-
-a {
-    text-decoration: none;
-    color: inherit;
-}
-
-.container {
+/* --- 全体コンテナと背景 --- */
+.dm-container {
+    font-family: var(--dm-font-modern);
     width: 100%;
     max-width: 800px;
+    padding: 40px 20px;
+    box-sizing: border-box;
+    color: #e8e6e3;
 }
-
-/* --- 背景エフェクト --- */
-.background-aurora {
+.dm-background-aurora {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
     background: radial-gradient(ellipse at 20% 80%, rgba(88, 76, 21, 0.15), transparent 50%),
                 radial-gradient(ellipse at 80% 20%, rgba(44, 62, 80, 0.15), transparent 50%);
-    animation: aurora 25s infinite alternate;
+    animation: dm-aurora 25s infinite alternate;
     z-index: -1;
 }
-
-@keyframes aurora {
+@keyframes dm-aurora {
     0% { transform: rotate(0deg) scale(1.5); }
     100% { transform: rotate(360deg) scale(2.2); }
 }
 
 /* --- ヘッダー --- */
-header { 
-    text-align: center; 
-    margin-bottom: 40px; 
-}
-
-/* ★修正点: 上で定義した変数を使ってスタイルを指定 */
-h1 { 
-    font-family: var(--font-elegant);
-    font-size: var(--font-size-h1);
+.dm-header { text-align: center; margin-bottom: 40px; }
+.dm-header h1 { 
+    font-family: var(--dm-font-elegant);
+    font-size: var(--dm-font-size-h1);
     color: #fff;
     font-weight: 700;
     letter-spacing: 3px;
-    text-shadow: 0 0 7px #fff, 0 0 12px var(--glow-color), 0 0 25px var(--glow-color), 0 0 40px var(--glow-color-transparent);
+    text-shadow: 0 0 7px #fff, 0 0 12px var(--dm-glow-color), 0 0 25px var(--dm-glow-color), 0 0 40px var(--dm-glow-color-transparent);
     margin: 0;
-    animation: pulse 5s infinite alternate;
+    animation: dm-pulse 5s infinite alternate;
 }
-
-@keyframes pulse {
-    from { text-shadow: 0 0 7px #fff, 0 0 12px var(--glow-color), 0 0 25px var(--glow-color); }
-    to { text-shadow: 0 0 7px #fff, 0 0 20px var(--glow-color), 0 0 45px var(--glow-color); }
+@keyframes dm-pulse {
+    from { text-shadow: 0 0 7px #fff, 0 0 12px var(--dm-glow-color), 0 0 25px var(--dm-glow-color); }
+    to { text-shadow: 0 0 7px #fff, 0 0 20px var(--dm-glow-color), 0 0 45px var(--dm-glow-color); }
 }
-
-/* ★修正点: 上で定義した変数を使ってスタイルを指定 */
-header p {
-    font-family: var(--font-modern);
-    font-size: var(--font-size-subtitle);
+.dm-header p {
+    font-family: var(--dm-font-modern);
+    font-size: var(--dm-font-size-subtitle);
     color: #a0a0a0;
     letter-spacing: 1px;
     margin-top: 0.2em;
@@ -96,7 +59,7 @@ header p {
 }
 
 /* --- 波形 --- */
-#waveform { 
+.dm-waveform { 
     width: 100%; 
     height: 120px; 
     background: rgba(255, 255, 255, 0.02);
@@ -107,7 +70,7 @@ header p {
 }
 
 /* --- プレイヤー情報エリア --- */
-#player-info {
+.dm-player-info {
     visibility: hidden;
     opacity: 0;
     max-height: 0;
@@ -120,8 +83,7 @@ header p {
     flex-direction: column;
     align-items: center;
 }
-
-#player-info.visible {
+.dm-player-info.visible {
     visibility: visible;
     opacity: 1;
     max-height: 300px;
@@ -129,29 +91,23 @@ header p {
     padding-bottom: 25px;
     margin-bottom: 40px;
 }
-
-/* ★修正点: 上で定義した変数を使ってスタイルを指定 */
-#now-playing {
-    font-family: var(--font-elegant);
-    font-size: var(--font-size-now-playing);
-    color: var(--glow-color);
+.dm-now-playing {
+    font-family: var(--dm-font-elegant);
+    font-size: var(--dm-font-size-now-playing);
+    color: var(--dm-glow-color);
     margin: 0 0 20px 0;
     min-height: 1.5em;
 }
-
-/* シークバー */
-#seek-bar {
+.dm-seek-bar {
     width: 90%;
     max-width: 500px;
-    accent-color: var(--glow-color);
+    accent-color: var(--dm-glow-color);
     margin-bottom: 25px;
 }
-
-/* STOPボタン */
-#stop-button {
+.dm-stop-button {
     background: transparent;
     border: 1px solid rgba(212, 175, 55, 0.5);
-    color: var(--glow-color);
+    color: var(--dm-glow-color);
     padding: 12px 40px;
     border-radius: 50px;
     cursor: pointer;
@@ -161,20 +117,19 @@ header p {
     text-transform: uppercase;
     backdrop-filter: blur(2px);
 }
-#stop-button:hover {
-    background: var(--glow-color);
+.dm-stop-button:hover {
+    background: var(--dm-glow-color);
     color: #0a0a0a;
-    box-shadow: 0 0 25px var(--glow-color-transparent);
+    box-shadow: 0 0 25px var(--dm-glow-color-transparent);
 }
 
 /* --- プレイリストカード --- */
-.game-gallery { 
+.dm-playlist-controls { 
     display: grid; 
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
     gap: 20px; 
 }
-
-.playlist-card { 
+.dm-playlist-card { 
     position: relative;
     background: rgba(255, 255, 255, 0.02);
     border-radius: 10px; 
@@ -185,62 +140,39 @@ header p {
     transition: all 0.3s ease;
     cursor: pointer;
 }
-.playlist-card:hover {
+.dm-playlist-card:hover {
     transform: translateY(-5px);
     background: rgba(212, 175, 55, 0.1);
-    border-color: var(--glow-color-transparent);
+    border-color: var(--dm-glow-color-transparent);
 }
-.playlist-card.active {
+.dm-playlist-card.active {
     background: rgba(212, 175, 55, 0.2);
-    border-color: var(--glow-color);
-    box-shadow: 0 0 20px var(--glow-color-transparent);
+    border-color: var(--dm-glow-color);
+    box-shadow: 0 0 20px var(--dm-glow-color-transparent);
 }
-.playlist-card.disabled {
-    opacity: 0.4;
-    filter: grayscale(80%);
-    cursor: not-allowed;
-}
-
-.card-icon-container {
+.dm-card-icon-container {
     height: 48px;
     margin-bottom: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.card-icon-container svg {
+.dm-card-icon-container svg {
     width: 40px; height: 40px;
     stroke: #a0a0a0;
     stroke-width: 1.2;
     fill: none;
     transition: all 0.3s ease;
 }
-.playlist-card:hover .card-icon-container svg,
-.playlist-card.active .card-icon-container svg {
-    stroke: var(--glow-color);
+.dm-playlist-card:hover .dm-card-icon-container svg,
+.dm-playlist-card.active .dm-card-icon-container svg {
+    stroke: var(--dm-glow-color);
 }
-
-/* ★修正点: 上で定義した変数を使ってスタイルを指定 */
-.card-title {
-    font-family: var(--font-modern);
-    font-size: var(--font-size-card-title);
-    font-weight: 400; /* 細すぎず読みやすい太さに */
+.dm-card-title {
+    font-family: var(--dm-font-modern);
+    font-size: var(--dm-font-size-card-title);
+    font-weight: 400;
     color: #ccc;
     text-shadow: none;
     line-height: 1.5;
-}
-
-/* --- レスポンシブ対応 --- */
-@media (max-width: 768px) {
-    body { padding: 40px 15px; }
-    header { margin-bottom: 40px; }
-    #player-info.visible { margin-bottom: 30px; }
-    .game-gallery { gap: 15px; }
-}
-
-@media (max-width: 480px) {
-    body { padding: 30px 10px; }
-    h1 { letter-spacing: 1px; }
-    #now-playing { font-size: 1.3em; }
-    .playlist-card { padding: 15px; }
 }

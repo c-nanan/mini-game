@@ -5,44 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delicious Music</title>
     
-    <!-- Google Fontsからフォントを読み込みます -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Inter:wght@300;400&display=swap" rel="stylesheet">
 
-    <!-- 同じフォルダ内のCSSを読み込む -->
     <link rel="stylesheet" href="style.css">
     
-    <!-- ライブラリの読み込み -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
-
 </head>
-<body>
-    <div class="background-aurora"></div>
+<body style="background-color: transparent; color: #e8e6e3;">
 
-    <div class="container">
-        <header>
+    <div class="dm-background-aurora"></div>
+
+    <div class="dm-container">
+        <header class="dm-header">
             <h1>Delicious Music</h1>
             <p>A curated playlist for your fine moments.</p>
         </header>
         <main>
-            <canvas id="waveform"></canvas>
+            <canvas class="dm-waveform" id="waveform"></canvas>
 
-            <!-- ★修正点: class="opacity-0" を削除しました。表示/非表示はCSSとJSで制御します -->
-            <div id="player-info">
-                <p id="now-playing"></p>
-                <input id="seek-bar" type="range" min="0" max="100" value="0" step="0.1" disabled>
-                <button id="stop-button" aria-label="Stop playback">STOP</button>
+            <div class="dm-player-info" id="player-info">
+                <p class="dm-now-playing" id="now-playing"></p>
+                <input class="dm-seek-bar" id="seek-bar" type="range" min="0" max="100" value="0" step="0.1" disabled>
+                <button class="dm-stop-button" id="stop-button" aria-label="Stop playback">STOP</button>
             </div>
 
-            <div id="playlist-controls" class="game-gallery">
-                <!-- プレイリストはJavaScriptによってここに生成されます -->
-            </div>
+            <div class="dm-playlist-controls" id="playlist-controls">
+                </div>
         </main>
     </div>
 
-    <!-- 同じフォルダ内のJSを読み込む -->
     <script src="script.js" defer></script>
 </body>
 </html>
