@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const stopBtn = container.querySelector('.dm-stop-button');
     const seekBar = container.querySelector('.dm-seek-bar');
 
-    // --- 設定：プレイリストとShopifyのURL ---
+    // --- 設定：プレイリスト ---
     const playlists = [
         { 
             title: "Fuwari",
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let players = {}; 
     let waveform;
     let currentTrackUrl = null;
-    let isSeeking = false;
+    let isSeeking = false; // ユーザーがシークバーを操作中かどうかのフラグ
     let uiUpdateLoopId = null;
 
     // --- 初期化処理 ---
@@ -82,22 +82,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         stopBtn.addEventListener('click', stopAllPlayback);
 
-        // --- シークバーのイベントリスナー (修正箇所) ---
+        // --- シークバーのイベントリスナー (ここが重要) ---
 
-        // 1. シーク操作の「開始」を検知
-        seekBar.addEventListener('mousedown', () => { isSeeking = true; });
-        seekBar.addEventListener('touchstart', () => { isSeeking = true; }, { passive: true });
+        // 1. ユーザーがスライダーを掴んだ時 (PC)
+        seekBar.addEventListener('mousedown', () => { 
+            isSeeking = true; 
+        });
+        // 1. ユーザーがスライダーを掴んだ時 (スマホ)
+        seekBar.addEventListener('touchstart', () => { 
+            isSeeking = true; 
+        }, { passive: true });
 
-        // 2. スライダーをドラッグしている「最中」に、リアルタイムで再生位置を更新
+        // 2. ユーザーがスライダーをドラッグしている最中
+        // 'input'イベントは値の変更をリアルタイムで検知します
         seekBar.addEventListener('input', handleSeek);
 
-        // 3. シーク操作の「終了」を検知 (マウスボタンを離した時)
+        // 3. ユーザーがスライダーを離した時 (PC)
+        // windowに設定することで、バーの外でマウスを離しても検知できる
         window.addEventListener('mouseup', () => {
             if (isSeeking) {
                 isSeeking = false;
             }
         });
-        // 4. シーク操作の「終了」を検知 (タッチを離した時)
+        // 3. ユーザーがスライダーを離した時 (スマホ)
         window.addEventListener('touchend', () => {
             if (isSeeking) {
                 isSeeking = false;
@@ -121,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const player = players[url];
-            Tone.Transport.seconds = 0;
+            Tone.Transport.seconds = 0; // 再生開始時は必ず0秒から
             player.start(0);
             Tone.Transport.start();
             startUiUpdateLoop();
@@ -169,6 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateUi() {
+        // isSeekingがtrueの間（＝ユーザーが操作中）は、自動更新を停止する
         if (currentTrackUrl && players[currentTrackUrl] && players[currentTrackUrl].loaded && !isSeeking) {
             const player = players[currentTrackUrl];
             const progress = (Tone.Transport.seconds % player.buffer.duration) / player.buffer.duration * 100;
@@ -196,8 +204,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const player = players[currentTrackUrl];
         if (player && player.loaded) {
+            // シークバーの値(0-100)から、曲の再生時間（秒数）を計算
             const newTime = player.buffer.duration * (seekBar.value / 100);
             if (isFinite(newTime)) {
+                // Transportの時間を更新することで、再生位置をジャンプさせる
                 Tone.Transport.seconds = newTime;
             }
         }
