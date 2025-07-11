@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!players[url]) {
                 players[url] = new Tone.Player({ url, loop: true, fadeOut: 0.5 })
                                  .toDestination();     // スピーカーへ
-                                    .connect(waveform);         // 波形解析へ
+                players[url].connect(waveform);         // 波形解析へ
                 await Tone.loaded();
             }
             
