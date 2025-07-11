@@ -14,29 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const seekBar = container.querySelector('.dm-seek-bar');
 
     // --- 設定：プレイリストとShopifyのURL ---
-    // ★★★ あなたが提供してくれた正しいURLをここに設定しました ★★★
-    const playlists = [
-        { 
-            title: "Fuwari",
-            fileUrl: "https://cdn.shopify.com/s/files/1/0588/5673/4929/files/fuwari.mp3?v=1752148553",
-            icon: `<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`
-        },
-        { 
-            title: "Sable",
-            fileUrl: "https://cdn.shopify.com/s/files/1/0588/5673/4929/files/sable.mp3?v=1752148553",
-            icon: `<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" /></svg>`
-        },
-        { 
-            title: "Dorayaki",
-            fileUrl: "https://cdn.shopify.com/s/files/1/0588/5673/4929/files/dorayaki.mp3?v=1752148552",
-            icon: `<svg viewBox="0 0 24 24"><path d="M5 11 C5 7, 19 7, 19 11 M5 13 C5 17, 19 17, 19 13"/></svg>`
-        },
-        { 
-            title: "Cafe",
-            fileUrl: "https://cdn.shopify.com/s/files/1/0588/5673/4929/files/dacquoise.mp3?v=1752149686",
-            icon: `<svg viewBox="0 0 24 24"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm-2 10c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2V5h10v8zm4-5h-2V5h2v3z"/></svg>`
-        }
-    ];
+    const playlists =;
 
     // --- 状態管理 ---
     let players = {}; 
@@ -77,20 +55,44 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('resize', resizeCanvas);
         controlsContainer.addEventListener('click', handleCardClick);
         controlsContainer.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === 'Enter' |
+
+| e.key === ' ') {
                 handleCardClick(e);
             }
         });
         stopBtn.addEventListener('click', stopAllPlayback);
+
+        // ▼▼▼▼▼ 修正箇所 ▼▼▼▼▼
+        // ユーザーがシークバーの操作を開始したことを記録
         seekBar.addEventListener('mousedown', () => { isSeeking = true; });
         seekBar.addEventListener('touchstart', () => { isSeeking = true; }, { passive: true });
-        window.addEventListener('mouseup', handleSeekEnd);
-        window.addEventListener('touchend', handleSeekEnd);
+
+        // ユーザーがシークバーをドラッグしている間、リアルタイムで再生位置を更新
+        seekBar.addEventListener('input', handleSeek);
+
+        // ユーザーが操作を完了したことを記録 ('change'イベントはマウスボタンを離した後に発火)
+        seekBar.addEventListener('change', () => { isSeeking = false; });
+        
+        // シークバーの外でマウスボタンを離した場合のフォールバック
+        window.addEventListener('mouseup', () => {
+            if (isSeeking) {
+                isSeeking = false;
+            }
+        });
+        window.addEventListener('touchend', () => {
+            if (isSeeking) {
+                isSeeking = false;
+            }
+        });
+        // ▲▲▲▲▲ 修正箇所 ▲▲▲▲▲
     }
 
     // --- 再生ロジック ---
     async function playTrack(url) {
-        if (!url || url === currentTrackUrl) return;
+        if (!url |
+
+| url === currentTrackUrl) return;
         await stopAllPlayback();
 
         currentTrackUrl = url;
@@ -121,9 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function stopAllPlayback() {
-        if (!currentTrackUrl || !players[currentTrackUrl]) return;
+        if (!currentTrackUrl ||!players) return;
         
-        const player = players[currentTrackUrl];
+        const player = players;
         Tone.Transport.stop();
         player.stop();
         stopUiUpdateLoop();
@@ -152,8 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateUi() {
-        if (currentTrackUrl && players[currentTrackUrl] && !isSeeking) {
-            const player = players[currentTrackUrl];
+        if (currentTrackUrl && players &&!isSeeking) {
+            const player = players;
             const progress = (Tone.Transport.seconds % player.buffer.duration) / player.buffer.duration * 100;
             if (isFinite(progress)) {
                 seekBar.value = progress;
@@ -173,24 +175,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function handleSeekEnd() {
-        if (!isSeeking) return;
-        isSeeking = false;
+    // ▼▼▼▼▼ 修正箇所 ▼▼▼▼▼
+    // 元の handleSeekEnd を削除し、新しい handleSeek 関数を定義
+    function handleSeek() {
         if (!currentTrackUrl) return;
 
-        const player = players[currentTrackUrl];
-        const newTime = player.buffer.duration * (seekBar.value / 100);
-        Tone.Transport.seconds = newTime;
-        
-        const playlistItem = playlists.find(p => p.fileUrl === currentTrackUrl);
-        if (playlistItem) {
-            nowPlayingEl.textContent = playlistItem.title;
+        const player = players;
+        // player と player.buffer が存在することを確認
+        if (player && player.buffer) {
+            const newTime = player.buffer.duration * (seekBar.value / 100);
+            // Tone.Transport.seconds を更新して再生位置を変更
+            Tone.Transport.seconds = newTime;
         }
     }
+    // ▲▲▲▲▲ 修正箇所 ▲▲▲▲▲
 
     // --- 描画 & ユーティリティ ---
     function resizeCanvas() {
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = window.devicePixelRatio |
+
+| 1;
         const rect = waveformCanvas.getBoundingClientRect();
         waveformCanvas.width = rect.width * dpr;
         waveformCanvas.height = rect.height * dpr;
@@ -227,7 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateCardStatus(url, status) {
         document.querySelectorAll('.dm-playlist-card').forEach(c => {
-            const isActive = (status === 'playing' || status === 'loading');
+            const isActive = (status === 'playing' |
+
+| status === 'loading');
             if (c.dataset.url === url) {
                 c.classList.toggle('active', isActive);
             } else {
