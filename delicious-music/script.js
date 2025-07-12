@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 初期化処理 ---
     async function initialize() {
         try {
-            await Tone.start();
              // Waveform は“解析専用”にしてスピーカーへは流さない
             waveform = new Tone.Waveform();
             createPlaylistCards();
@@ -116,6 +115,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 再生ロジック ---
     async function playTrack(url) {
         if (!url || url === currentTrackUrl) return;
+        
+        /* ▼ 追加：初回クリック時だけ Resume */
+  if (Tone.context.state !== 'running') {
+    await Tone.start();
+  }
         await stopAllPlayback();
 
         currentTrackUrl = url;
