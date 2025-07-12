@@ -115,12 +115,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 再生ロジック ---
     async function playTrack(url) {
         if (!url || url === currentTrackUrl) return;
-        
-        /* ▼ 追加：初回クリック時だけ Resume */
+          // ▼ モバイルの自動再生制限回避：初回タップ時だけ AudioContext を resume
   if (Tone.context.state !== 'running') {
     await Tone.start();
   }
-        await stopAllPlayback();
+
+  // ▼ 続けて停止処理
+  await stopAllPlayback();
 
         currentTrackUrl = url;
         const playlistItem = playlists.find(p => p.fileUrl === url);
