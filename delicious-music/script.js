@@ -114,14 +114,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 再生ロジック ---
     async function playTrack(url) {
-        if (!url || url === currentTrackUrl) return;
-          // ▼ モバイルの自動再生制限回避：初回タップ時だけ AudioContext を resume
-  if (Tone.context.state !== 'running') {
-    await Tone.start();
+            if (!url || url === currentTrackUrl) return;
+             // ▼ モバイルの自動再生制限回避：初回タップ時だけ AudioContext を resume
+             if (Tone.context.state !== 'running') {
+             await Tone.start();
   }
 
-  // ▼ 続けて停止処理
-  await stopAllPlayback();
+     // ▼ 続けて停止処理
+      await stopAllPlayback();
 
         currentTrackUrl = url;
         const playlistItem = playlists.find(p => p.fileUrl === url);
@@ -137,12 +137,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
 
             const player = players[url];
+ // 代わりに「今」再生をスタート
+    const now = Tone.now();
+    player._startTime = now;    // ← この行を追加
+    player.start(now);
 
-            players[url].sync().start(0);               // Transport と同期
-            if (Tone.Transport.state !== 'started') {   // まだ動いていなければ
-                Tone.Transport.start();
-            }
-            Tone.Transport.seconds = 0;  
             startUiUpdateLoop();
 
             playerInfo.classList.add('visible');
@@ -160,9 +159,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentTrackUrl || !players[currentTrackUrl]) return;
         
         const player = players[currentTrackUrl];
-        player.stop();             // Transport は止めず、次の曲に備える
+           // 「今」止める
+          const now = Tone.now();
+          player.stop(now);        
         stopUiUpdateLoop();
-
+        // メモリも解放
+        player.dispose();
+        delete players[currentTrackUrl];
         updateCardStatus(currentTrackUrl, 'idle');
         playerInfo.classList.remove('visible');
         seekBar.disabled = true;
@@ -190,7 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // isSeekingがtrueの間（＝ユーザーが操作中）は、自動更新を停止する
         if (currentTrackUrl && players[currentTrackUrl] && players[currentTrackUrl].loaded && !isSeeking) {
             const player = players[currentTrackUrl];
-            const progress = (Tone.Transport.seconds % player.buffer.duration) / player.buffer.duration * 100;
+   // Tone.now() から再生開始時刻を差し引いて進捗を計算
+            const elapsed  = Tone.now() - player._startTime;        // ★ start() 時に _startTime を保存する必要があります
+            const progress = (elapsed % player.buffer.duration) / player.buffer.duration * 100;
             if (isFinite(progress)) {
                 seekBar.value = progress;
             }
@@ -215,13 +220,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const player = players[currentTrackUrl];
         if (player && player.loaded) {
-            // シークバーの値(0-100)から、曲の再生時間（秒数）を計算
-            const newTime = player.buffer.duration * (seekBar.value / 100);
-            if (isFinite(newTime)) {
-                // Transportの時間を更新することで、再生位置をジャンプさせる
-                Tone.Transport.seconds = newTime;
-            }
-        }
+              // 旧再生を止めて、新しい位置から再開
+             const newTime = player.buffer.duration * (seekBar.value / 100);
+             const now     = Tone.now();
+               player.stop(now);
+              player._startTime = now - newTime;    // startTime を offset 位置に調整
+            player.start(now, newTime);
+         }
     }
 
     // --- 描画 & ユーティリティ ---
