@@ -94,8 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { passive: true });
 
         // 2. ユーザーがスライダーをドラッグしている最中
-        // 'input'イベントは値の変更をリアルタイムで検知します
-        seekBar.addEventListener('input', handleSeek);
+        seekBar.addEventListener('change', handleSeek);
 
         // 3. ユーザーがスライダーを離した時 (PC)
         // windowに設定することで、バーの外でマウスを離しても検知できる
@@ -243,7 +242,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const width = waveformCanvas.clientWidth;
         const height = waveformCanvas.clientHeight;
         waveformCtx.clearRect(0, 0, width, height);
+     // キャンバス全体をピクセル単位でクリア（前の波形の残像を消す）
+        waveformCtx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
 
+        if (!currentTrackUrl) return;
         if (!currentTrackUrl) return;
         
         const values = waveform.getValue();
