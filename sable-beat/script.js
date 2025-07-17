@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showStyleSelect() {
-        const view = `<p>プレイスタイルを選んでください</p><button class="ui-button" data-action="select-style" data-style="left">左手でプレイ</button><button class="ui-button" data-action="select-style" data-style="right">右手でプレイ</button><button class="ui-button" data-action="select-style" data-style="tap">タップでプレイ</button><button class="ui-button" data-action="back-to-song-select">曲選択に戻る</button>`;
+        const view = `<p>プレイスタイルを選んでください</p><button class="ui-button" data-action="select-style" data-style="left">PC(左手)</button><button class="ui-button" data-action="select-style" data-style="right">PC(右手)</button><button class="ui-button" data-action="select-style" data-style="tap">タップでプレイ</button><button class="ui-button" data-action="back-to-song-select">曲選択に戻る</button>`;
         showView(view);
     }
 
